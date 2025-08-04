@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام POS{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-color) 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+        transform: scale(1.5);
+    }
+
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-card.sales {
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    }
+
+    .stat-card.purchases {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    }
+
+    .stat-card.customers {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    }
+
+    .stat-card.products {
+        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .action-btn {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        text-decoration: none;
+        color: var(--primary-color);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-btn:hover {
+        border-color: var(--secondary-color);
+        color: var(--secondary-color);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .action-btn i {
+        font-size: 2rem;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .chart-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .recent-activities {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f1f3f4;
+        gap: 1rem;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .activity-icon.sale {
+        background: var(--success-color);
+    }
+
+    .activity-icon.purchase {
+        background: var(--warning-color);
+    }
+
+    .activity-icon.customer {
+        background: var(--secondary-color);
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-time {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .low-stock-alert {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        display: none;
+    }
+
+    .low-stock-alert.show {
+        display: block;
+    }
+
+    .alert-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .alert-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .alert-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .alert-list li:last-child {
+        border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        .charts-section {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-grid {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        
+        .quick-actions {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Low Stock Alert -->
+<div class="low-stock-alert" id="lowStockAlert">
+    <div class="alert-title">
+        <i class="fas fa-exclamation-triangle"></i>
+        تنبيه: منتجات قاربت على النفاد
+    </div>
+    <ul class="alert-list" id="lowStockList">
+        <!-- Low stock items will be loaded here -->
+    </ul>
+</div>
+
+<!-- Statistics Cards -->
+<div class="dashboard-grid">
+    <div class="stat-card sales">
+        <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-value" id="todaySales">0.00</div>
+        <div class="stat-label">مبيعات اليوم (ج.م)</div>
+    </div>
+    
+    <div class="stat-card purchases">
+        <div class="stat-icon">
+            <i class="fas fa-truck"></i>
+        </div>
+        <div class="stat-value" id="monthPurchases">0.00</div>
+        <div class="stat-label">مشتريات الشهر (ج.م)</div>
+    </div>
+    
+    <div class="stat-card customers">
+        <div class="stat-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-value" id="totalCustomers">0</div>
+        <div class="stat-label">إجمالي العملاء</div>
+    </div>
+    
+    <div class="stat-card products">
+        <div class="stat-icon">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-value" id="totalProducts">0</div>
+        <div class="stat-label">إجمالي المنتجات</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <a href="{{ url_for('pos') }}" class="action-btn">
+        <i class="fas fa-cash-register"></i>
+        <span>نقطة البيع</span>
+    </a>
+    
+    <a href="{{ url_for('sales') }}" class="action-btn">
+        <i class="fas fa-shopping-cart"></i>
+        <span>إدارة المبيعات</span>
+    </a>
+    
+    <a href="{{ url_for('purchases') }}" class="action-btn">
+        <i class="fas fa-truck"></i>
+        <span>إدارة المشتريات</span>
+    </a>
+    
+    <a href="{{ url_for('products') }}" class="action-btn">
+        <i class="fas fa-box"></i>
+        <span>إدارة المنتجات</span>
+    </a>
+    
+    <a href="{{ url_for('customers') }}" class="action-btn">
+        <i class="fas fa-users"></i>
+        <span>إدارة العملاء</span>
+    </a>
+    
+    <a href="{{ url_for('suppliers') }}" class="action-btn">
+        <i class="fas fa-industry"></i>
+        <span>إدارة الموردين</span>
+    </a>
+</div>
+
+<!-- Charts and Activities -->
+<div class="charts-section">
+    <div class="chart-card">
+        <div class="chart-title">
+            <i class="fas fa-chart-bar"></i>
+            مبيعات آخر 7 أيام
+        </div>
+        <canvas id="salesChart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="recent-activities">
+        <div class="chart-title">
+            <i class="fas fa-clock"></i>
+            النشاطات الأخيرة
+        </div>
+        <div id="activitiesList">
+            <!-- Activities will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let salesChart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDashboardData();
+        initSalesChart();
+        loadRecentActivities();
+        
+        // Refresh data every 30 seconds
+        setInterval(loadDashboardData, 30000);
+    });
+
+    async function loadDashboardData() {
+        try {
+            // Load statistics
+            const statsResponse = await fetch('/api/dashboard/stats');
+            const stats = await statsResponse.json();
+            
+            document.getElementById('todaySales').textContent = stats.today_sales.toFixed(2);
+            document.getElementById('monthPurchases').textContent = stats.month_purchases.toFixed(2);
+            document.getElementById('totalCustomers').textContent = stats.total_customers;
+            document.getElementById('totalProducts').textContent = stats.total_products;
+            
+            // Check for low stock
+            if (stats.low_stock_products && stats.low_stock_products.length > 0) {
+                showLowStockAlert(stats.low_stock_products);
+            }
+            
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        }
+    }
+
+    function showLowStockAlert(products) {
+        const alert = document.getElementById('lowStockAlert');
+        const list = document.getElementById('lowStockList');
+        
+        list.innerHTML = '';
+        products.forEach(product => {
+            const li = document.createElement('li');
+            li.textContent = `${product.name} - متبقي: ${product.current_quantity}`;
+            list.appendChild(li);
+        });
+        
+        alert.classList.add('show');
+    }
+
+    function initSalesChart() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['6 أيام', '5 أيام', '4 أيام', '3 أيام', 'أمس', 'اليوم'],
+                datasets: [{
+                    label: 'المبيعات (ج.م)',
+                    data: [1200, 1900, 3000, 5000, 2000, 3000],
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadRecentActivities() {
+        const activitiesList = document.getElementById('activitiesList');
+        
+        // Sample activities - in real app, load from API
+        const activities = [
+            {
+                type: 'sale',
+                title: 'فاتورة مبيعات جديدة',
+                description: 'فاتورة رقم #1001 بقيمة 250.00 ج.م',
+                time: 'منذ 5 دقائق'
+            },
+            {
+                type: 'customer',
+                title: 'عميل جديد',
+                description: 'تم إضافة العميل: أحمد محمد',
+                time: 'منذ 15 دقيقة'
+            },
+            {
+                type: 'purchase',
+                title: 'فاتورة مشتريات',
+                description: 'فاتورة رقم #P001 بقيمة 500.00 ج.م',
+                time: 'منذ ساعة'
+            }
+        ];
+        
+        activitiesList.innerHTML = '';
+        activities.forEach(activity => {
+            const activityDiv = document.createElement('div');
+            activityDiv.className = 'activity-item';
+            activityDiv.innerHTML = `
+                <div class="activity-icon ${activity.type}">
+                    <i class="fas fa-${activity.type === 'sale' ? 'shopping-cart' : 
+                                      activity.type === 'customer' ? 'user' : 'truck'}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-description">${activity.description}</div>
+                    <div class="activity-time">${activity.time}</div>
+                </div>
+            `;
+            activitiesList.appendChild(activityDiv);
+        });
+    }
+
+    // Real-time updates via WebSocket
+    socket.on('sale_created', function(data) {
+        // Update today's sales
+        const currentSales = parseFloat(document.getElementById('todaySales').textContent);
+        document.getElementById('todaySales').textContent = (currentSales + data.total).toFixed(2);
+        
+        // Add to recent activities
+        const activitiesList = document.getElementById('activitiesList');
+        const newActivity = document.createElement('div');
+        newActivity.className = 'activity-item';
+        newActivity.innerHTML = `
+            <div class="activity-icon sale">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">فاتورة مبيعات جديدة</div>
+                <div class="activity-description">فاتورة رقم #${data.sale_id} بقيمة ${data.total.toFixed(2)} ج.م</div>
+                <div class="activity-time">الآن</div>
+            </div>
+        `;
+        
+        activitiesList.insertBefore(newActivity, activitiesList.firstChild);
+        
+        // Keep only last 5 activities
+        while (activitiesList.children.length > 5) {
+            activitiesList.removeChild(activitiesList.lastChild);
+        }
+    });
+</script>
+{% endblock %}

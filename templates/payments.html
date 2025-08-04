@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المدفوعات{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease;
+    }
+
+    .payment-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .btn-pay {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+
+    .btn-receive {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+
+    .balance-positive {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .balance-negative {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .payment-history {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .payment-item {
+        border-left: 4px solid #28a745;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .payment-item.outgoing {
+        border-left-color: #dc3545;
+    }
+
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header text-center">
+        <h1><i class="fas fa-money-bill-wave"></i> إدارة المدفوعات</h1>
+        <p>دفع وتحصيل الحسابات الآجلة للعملاء والموردين</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 id="totalCustomerDebt">0 ج.م</h3>
+                <p>إجمالي ديون العملاء</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 id="totalSupplierDebt">0 ج.م</h3>
+                <p>إجمالي ديون الموردين</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 id="todayPayments">0 ج.م</h3>
+                <p>مدفوعات اليوم</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 id="todayReceipts">0 ج.م</h3>
+                <p>تحصيلات اليوم</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab">
+                <i class="fas fa-users"></i> حسابات العملاء
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="suppliers-tab" data-bs-toggle="tab" data-bs-target="#suppliers" type="button" role="tab">
+                <i class="fas fa-truck"></i> حسابات الموردين
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                <i class="fas fa-history"></i> سجل المدفوعات
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="paymentTabContent">
+        <!-- Customer Accounts -->
+        <div class="tab-pane fade show active" id="customers" role="tabpanel">
+            <div class="row mt-3">
+                <div class="col-md-8">
+                    <div class="payment-card">
+                        <h5><i class="fas fa-users"></i> حسابات العملاء الآجلة</h5>
+                        <div id="customerAccounts"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="payment-card">
+                        <h5><i class="fas fa-calculator"></i> حاسبة المدفوعات</h5>
+                        <div class="mb-3">
+                            <label class="form-label">المبلغ المطلوب</label>
+                            <input type="number" class="form-control" id="paymentAmount" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="paymentNotes" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-receive w-100" onclick="processCustomerPayment()">
+                            <i class="fas fa-hand-holding-usd"></i> تحصيل المبلغ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supplier Accounts -->
+        <div class="tab-pane fade" id="suppliers" role="tabpanel">
+            <div class="row mt-3">
+                <div class="col-md-8">
+                    <div class="payment-card">
+                        <h5><i class="fas fa-truck"></i> حسابات الموردين الآجلة</h5>
+                        <div id="supplierAccounts"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="payment-card">
+                        <h5><i class="fas fa-calculator"></i> حاسبة المدفوعات</h5>
+                        <div class="mb-3">
+                            <label class="form-label">المبلغ المطلوب دفعه</label>
+                            <input type="number" class="form-control" id="supplierPaymentAmount" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="supplierPaymentNotes" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-pay w-100" onclick="processSupplierPayment()">
+                            <i class="fas fa-money-bill-wave"></i> دفع المبلغ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment History -->
+        <div class="tab-pane fade" id="history" role="tabpanel">
+            <div class="payment-card mt-3">
+                <h5><i class="fas fa-history"></i> سجل المدفوعات</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="date" class="form-control" id="historyFromDate">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="date" class="form-control" id="historyToDate">
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary" onclick="loadPaymentHistory()">
+                            <i class="fas fa-search"></i> بحث
+                        </button>
+                    </div>
+                </div>
+                <div class="payment-history" id="paymentHistoryList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalTitle">تأكيد المدفوعة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentModalContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-success" id="confirmPaymentBtn">تأكيد</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let customers = [];
+    let suppliers = [];
+    let selectedCustomer = null;
+    let selectedSupplier = null;
+    let paymentHistory = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCustomers();
+        loadSuppliers();
+        loadPaymentHistory();
+        updateStatistics();
+    });
+
+    async function loadCustomers() {
+        try {
+            const response = await fetch('/api/customers');
+            const result = await response.json();
+            if (result.success) {
+                customers = result.data.filter(customer => customer.balance < 0); // العملاء المدينين
+                displayCustomerAccounts();
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل العملاء:', error);
+        }
+    }
+
+    async function loadSuppliers() {
+        try {
+            const response = await fetch('/api/suppliers');
+            const result = await response.json();
+            if (result.success) {
+                suppliers = result.data.filter(supplier => supplier.balance > 0); // الموردين الدائنين
+                displaySupplierAccounts();
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل الموردين:', error);
+        }
+    }
+
+    function displayCustomerAccounts() {
+        const container = document.getElementById('customerAccounts');
+        
+        if (customers.length === 0) {
+            container.innerHTML = '<p class="text-muted">لا توجد حسابات آجلة للعملاء</p>';
+            return;
+        }
+
+        let html = '';
+        customers.forEach(customer => {
+            const debt = Math.abs(customer.balance);
+            html += `
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom ${selectedCustomer?.id === customer.id ? 'bg-light' : ''}" 
+                     style="cursor: pointer;" onclick="selectCustomer(${customer.id})">
+                    <div>
+                        <h6 class="mb-1">${customer.name}</h6>
+                        <small class="text-muted">${customer.phone || 'لا يوجد هاتف'}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="balance-negative">${debt.toFixed(2)} ج.م</span>
+                        <br>
+                        <small class="text-muted">مستحق</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    function displaySupplierAccounts() {
+        const container = document.getElementById('supplierAccounts');
+        
+        if (suppliers.length === 0) {
+            container.innerHTML = '<p class="text-muted">لا توجد حسابات آجلة للموردين</p>';
+            return;
+        }
+
+        let html = '';
+        suppliers.forEach(supplier => {
+            const debt = supplier.balance;
+            html += `
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom ${selectedSupplier?.id === supplier.id ? 'bg-light' : ''}" 
+                     style="cursor: pointer;" onclick="selectSupplier(${supplier.id})">
+                    <div>
+                        <h6 class="mb-1">${supplier.name}</h6>
+                        <small class="text-muted">${supplier.phone || 'لا يوجد هاتف'}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="balance-negative">${debt.toFixed(2)} ج.م</span>
+                        <br>
+                        <small class="text-muted">مستحق الدفع</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    function selectCustomer(customerId) {
+        selectedCustomer = customers.find(c => c.id === customerId);
+        displayCustomerAccounts();
+        
+        if (selectedCustomer) {
+            document.getElementById('paymentAmount').value = Math.abs(selectedCustomer.balance).toFixed(2);
+        }
+    }
+
+    function selectSupplier(supplierId) {
+        selectedSupplier = suppliers.find(s => s.id === supplierId);
+        displaySupplierAccounts();
+        
+        if (selectedSupplier) {
+            document.getElementById('supplierPaymentAmount').value = selectedSupplier.balance.toFixed(2);
+        }
+    }
+
+    function processCustomerPayment() {
+        if (!selectedCustomer) {
+            alert('يرجى اختيار عميل أولاً');
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const notes = document.getElementById('paymentNotes').value;
+
+        if (!amount || amount <= 0) {
+            alert('يرجى إدخال مبلغ صحيح');
+            return;
+        }
+
+        const maxAmount = Math.abs(selectedCustomer.balance);
+        if (amount > maxAmount) {
+            alert(`المبلغ أكبر من المستحق (${maxAmount.toFixed(2)} ج.م)`);
+            return;
+        }
+
+        showPaymentConfirmation('customer', selectedCustomer, amount, notes);
+    }
+
+    function processSupplierPayment() {
+        if (!selectedSupplier) {
+            alert('يرجى اختيار مورد أولاً');
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('supplierPaymentAmount').value);
+        const notes = document.getElementById('supplierPaymentNotes').value;
+
+        if (!amount || amount <= 0) {
+            alert('يرجى إدخال مبلغ صحيح');
+            return;
+        }
+
+        if (amount > selectedSupplier.balance) {
+            alert(`المبلغ أكبر من المستحق (${selectedSupplier.balance.toFixed(2)} ج.م)`);
+            return;
+        }
+
+        showPaymentConfirmation('supplier', selectedSupplier, amount, notes);
+    }
+
+    function showPaymentConfirmation(type, entity, amount, notes) {
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        const title = type === 'customer' ? 'تحصيل من عميل' : 'دفع لمورد';
+        const action = type === 'customer' ? 'تحصيل' : 'دفع';
+        
+        document.getElementById('paymentModalTitle').textContent = title;
+        document.getElementById('paymentModalContent').innerHTML = `
+            <div class="text-center">
+                <h5>${action} مبلغ ${amount.toFixed(2)} ج.م</h5>
+                <p><strong>${type === 'customer' ? 'من العميل' : 'للمورد'}:</strong> ${entity.name}</p>
+                ${notes ? `<p><strong>ملاحظات:</strong> ${notes}</p>` : ''}
+                <p class="text-muted">هل أنت متأكد من هذه العملية؟</p>
+            </div>
+        `;
+        
+        document.getElementById('confirmPaymentBtn').onclick = () => {
+            confirmPayment(type, entity, amount, notes);
+            modal.hide();
+        };
+        
+        modal.show();
+    }
+
+    async function confirmPayment(type, entity, amount, notes) {
+        try {
+            const response = await fetch('/api/payments/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: type,
+                    entity_id: entity.id,
+                    amount: amount,
+                    notes: notes
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('تم تسجيل المدفوعة بنجاح');
+                
+                // تحديث الرصيد محلياً
+                if (type === 'customer') {
+                    entity.balance += amount;
+                    document.getElementById('paymentAmount').value = '';
+                    document.getElementById('paymentNotes').value = '';
+                    selectedCustomer = null;
+                } else {
+                    entity.balance -= amount;
+                    document.getElementById('supplierPaymentAmount').value = '';
+                    document.getElementById('supplierPaymentNotes').value = '';
+                    selectedSupplier = null;
+                }
+                
+                // إعادة تحميل البيانات
+                loadCustomers();
+                loadSuppliers();
+                loadPaymentHistory();
+                updateStatistics();
+            } else {
+                alert('خطأ: ' + result.message);
+            }
+        } catch (error) {
+            alert('حدث خطأ في تسجيل المدفوعة');
+            console.error(error);
+        }
+    }
+
+    async function loadPaymentHistory() {
+        try {
+            const response = await fetch('/api/payments/history');
+            const result = await response.json();
+
+            const container = document.getElementById('paymentHistoryList');
+
+            if (result.success && result.data.length > 0) {
+                let html = '';
+                result.data.forEach(payment => {
+                    const date = new Date(payment.created_at).toLocaleDateString('ar-EG');
+                    const time = new Date(payment.created_at).toLocaleTimeString('ar-EG');
+                    const isIncoming = payment.type === 'customer';
+
+                    html += `
+                        <div class="payment-item ${isIncoming ? '' : 'outgoing'}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">
+                                        ${isIncoming ? 'تحصيل من' : 'دفع إلى'} ${payment.entity_name}
+                                    </h6>
+                                    <small class="text-muted">${date} - ${time}</small>
+                                    ${payment.notes ? `<br><small class="text-muted">${payment.notes}</small>` : ''}
+                                </div>
+                                <div class="text-end">
+                                    <span class="${isIncoming ? 'text-success' : 'text-danger'}">
+                                        ${isIncoming ? '+' : '-'}${payment.amount.toFixed(2)} ج.م
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p class="text-muted">لا توجد مدفوعات مسجلة</p>';
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل سجل المدفوعات:', error);
+            document.getElementById('paymentHistoryList').innerHTML = '<p class="text-danger">خطأ في تحميل البيانات</p>';
+        }
+    }
+
+    function updateStatistics() {
+        const totalCustomerDebt = customers.reduce((sum, customer) => sum + Math.abs(customer.balance), 0);
+        const totalSupplierDebt = suppliers.reduce((sum, supplier) => sum + supplier.balance, 0);
+        
+        document.getElementById('totalCustomerDebt').textContent = totalCustomerDebt.toFixed(2) + ' ج.م';
+        document.getElementById('totalSupplierDebt').textContent = totalSupplierDebt.toFixed(2) + ' ج.م';
+        document.getElementById('todayPayments').textContent = '0 ج.م';
+        document.getElementById('todayReceipts').textContent = '0 ج.م';
+    }
+</script>
+{% endblock %}

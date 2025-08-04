@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة بيانات تاريخية{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .ai-info {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-add-historical {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+    }
+
+    .item-row {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .remove-item {
+        background: #dc3545;
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header text-center">
+        <h1><i class="fas fa-history"></i> إضافة بيانات تاريخية</h1>
+        <p>إضافة معاملات سابقة لتحسين دقة التحليلات والتوقعات</p>
+    </div>
+
+    <!-- AI Information -->
+    <div class="ai-info">
+        <h4><i class="fas fa-brain"></i> أهمية البيانات التاريخية للذكاء الاصطناعي</h4>
+        <p>إضافة البيانات التاريخية تساعد النظام على:</p>
+        <ul>
+            <li>فهم أنماط المبيعات الموسمية</li>
+            <li>تحسين دقة توقعات المبيعات</li>
+            <li>تحليل سلوك العملاء بشكل أفضل</li>
+            <li>تحديد المنتجات الأكثر ربحية تاريخياً</li>
+            <li>تقديم توصيات أكثر دقة</li>
+        </ul>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+        <form id="historicalForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">نوع المعاملة</label>
+                        <select class="form-control" id="transactionType" required>
+                            <option value="">اختر نوع المعاملة</option>
+                            <option value="sale">مبيعات</option>
+                            <option value="purchase">مشتريات</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">تاريخ المعاملة</label>
+                        <input type="date" class="form-control" id="transactionDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" id="customerSupplierSection" style="display: none;">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label" id="customerSupplierLabel">العميل/المورد</label>
+                        <select class="form-control" id="customerSupplier">
+                            <option value="">اختياري</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">طريقة الدفع</label>
+                        <select class="form-control" id="paymentMethod">
+                            <option value="نقدي">نقدي</option>
+                            <option value="آجل">آجل</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">المنتجات</label>
+                <div id="itemsContainer">
+                    <!-- Items will be added here -->
+                </div>
+                <button type="button" class="btn btn-outline-primary" onclick="addItem()">
+                    <i class="fas fa-plus"></i> إضافة منتج
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">إجمالي المبلغ</label>
+                        <input type="number" class="form-control" id="totalAmount" step="0.01" readonly>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">خصم</label>
+                        <input type="number" class="form-control" id="discount" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">المبلغ النهائي</label>
+                        <input type="number" class="form-control" id="finalAmount" step="0.01" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-add-historical">
+                    <i class="fas fa-save"></i> حفظ المعاملة التاريخية
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let itemCounter = 0;
+    let products = [];
+    let customers = [];
+    let suppliers = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProducts();
+        loadCustomers();
+        loadSuppliers();
+        addItem(); // إضافة عنصر افتراضي
+    });
+
+    async function loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            const result = await response.json();
+            if (result.success) {
+                products = result.data;
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل المنتجات:', error);
+        }
+    }
+
+    async function loadCustomers() {
+        try {
+            const response = await fetch('/api/customers');
+            const result = await response.json();
+            if (result.success) {
+                customers = result.data;
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل العملاء:', error);
+        }
+    }
+
+    async function loadSuppliers() {
+        try {
+            const response = await fetch('/api/suppliers');
+            const result = await response.json();
+            if (result.success) {
+                suppliers = result.data;
+            }
+        } catch (error) {
+            console.error('خطأ في تحميل الموردين:', error);
+        }
+    }
+
+    document.getElementById('transactionType').addEventListener('change', function() {
+        const type = this.value;
+        const section = document.getElementById('customerSupplierSection');
+        const label = document.getElementById('customerSupplierLabel');
+        const select = document.getElementById('customerSupplier');
+
+        if (type) {
+            section.style.display = 'block';
+            
+            if (type === 'sale') {
+                label.textContent = 'العميل';
+                select.innerHTML = '<option value="">عميل نقدي</option>';
+                customers.forEach(customer => {
+                    select.innerHTML += `<option value="${customer.id}">${customer.name}</option>`;
+                });
+            } else {
+                label.textContent = 'المورد';
+                select.innerHTML = '<option value="">اختر المورد</option>';
+                suppliers.forEach(supplier => {
+                    select.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                });
+            }
+        } else {
+            section.style.display = 'none';
+        }
+    });
+
+    function addItem() {
+        itemCounter++;
+        const container = document.getElementById('itemsContainer');
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item-row';
+        itemDiv.id = `item-${itemCounter}`;
+        
+        itemDiv.innerHTML = `
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label">المنتج</label>
+                    <select class="form-control product-select" onchange="updateItemPrice(${itemCounter})">
+                        <option value="">اختر المنتج</option>
+                        ${products.map(p => `<option value="${p.id}" data-price="${p.selling_price}">${p.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الكمية</label>
+                    <input type="number" class="form-control quantity-input" min="1" value="1" onchange="calculateTotal()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">السعر</label>
+                    <input type="number" class="form-control price-input" step="0.01" onchange="calculateTotal()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الإجمالي</label>
+                    <input type="number" class="form-control total-input" readonly>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="remove-item" onclick="removeItem(${itemCounter})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(itemDiv);
+    }
+
+    function removeItem(itemId) {
+        const item = document.getElementById(`item-${itemId}`);
+        if (item) {
+            item.remove();
+            calculateTotal();
+        }
+    }
+
+    function updateItemPrice(itemId) {
+        const item = document.getElementById(`item-${itemId}`);
+        const select = item.querySelector('.product-select');
+        const priceInput = item.querySelector('.price-input');
+        
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption.value) {
+            priceInput.value = selectedOption.dataset.price;
+            calculateTotal();
+        }
+    }
+
+    function calculateTotal() {
+        let total = 0;
+        
+        document.querySelectorAll('.item-row').forEach(item => {
+            const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+            const price = parseFloat(item.querySelector('.price-input').value) || 0;
+            const itemTotal = quantity * price;
+            
+            item.querySelector('.total-input').value = itemTotal.toFixed(2);
+            total += itemTotal;
+        });
+        
+        document.getElementById('totalAmount').value = total.toFixed(2);
+        
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const finalAmount = total - discount;
+        document.getElementById('finalAmount').value = finalAmount.toFixed(2);
+    }
+
+    document.getElementById('discount').addEventListener('input', calculateTotal);
+
+    document.getElementById('historicalForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            type: document.getElementById('transactionType').value,
+            date: document.getElementById('transactionDate').value,
+            data: {
+                customer_id: document.getElementById('transactionType').value === 'sale' ? 
+                           (document.getElementById('customerSupplier').value || null) : null,
+                supplier_id: document.getElementById('transactionType').value === 'purchase' ? 
+                           (document.getElementById('customerSupplier').value || null) : null,
+                total_amount: parseFloat(document.getElementById('totalAmount').value),
+                discount: parseFloat(document.getElementById('discount').value) || 0,
+                final_amount: parseFloat(document.getElementById('finalAmount').value),
+                payment_method: document.getElementById('paymentMethod').value,
+                is_paid: document.getElementById('paymentMethod').value === 'نقدي',
+                items: []
+            }
+        };
+        
+        // جمع بيانات المنتجات
+        document.querySelectorAll('.item-row').forEach(item => {
+            const productSelect = item.querySelector('.product-select');
+            const quantity = parseFloat(item.querySelector('.quantity-input').value);
+            const price = parseFloat(item.querySelector('.price-input').value);
+            
+            if (productSelect.value && quantity > 0 && price > 0) {
+                formData.data.items.push({
+                    product_id: parseInt(productSelect.value),
+                    quantity: quantity,
+                    price: price
+                });
+            }
+        });
+        
+        if (formData.data.items.length === 0) {
+            alert('يجب إضافة منتج واحد على الأقل');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/advanced/add-historical', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('تم حفظ المعاملة التاريخية بنجاح');
+                this.reset();
+                document.getElementById('itemsContainer').innerHTML = '';
+                addItem();
+            } else {
+                alert('خطأ: ' + result.message);
+            }
+        } catch (error) {
+            alert('حدث خطأ في الحفظ');
+            console.error(error);
+        }
+    });
+</script>
+{% endblock %}

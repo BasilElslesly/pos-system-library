@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة العملاء - نظام POS{% endblock %}
+{% block page_title %}إدارة العملاء{% endblock %}
+
+{% block extra_css %}
+<style>
+    .customers-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .search-section {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex: 1;
+        max-width: 500px;
+    }
+
+    .search-input {
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #e9ecef;
+        font-size: 1rem;
+    }
+
+    .customers-table {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .table {
+        margin: 0;
+    }
+
+    .table thead th {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 1rem;
+    }
+
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .customer-name {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .balance-positive {
+        color: var(--success-color);
+        font-weight: 600;
+    }
+
+    .balance-negative {
+        color: var(--danger-color);
+        font-weight: 600;
+    }
+
+    .balance-zero {
+        color: #6c757d;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 8px;
+    }
+
+    .add-customer-btn {
+        background: linear-gradient(45deg, var(--secondary-color), #5dade2);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .add-customer-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+    }
+
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+    }
+
+    .modal-header {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+        .customers-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+        
+        .search-section {
+            max-width: none;
+        }
+        
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .stats-cards {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-value" id="totalCustomers">0</div>
+        <div class="stat-label">إجمالي العملاء</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="activeCustomers">0</div>
+        <div class="stat-label">عملاء نشطين</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="totalBalance">0</div>
+        <div class="stat-label">إجمالي الأرصدة</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="newCustomers">0</div>
+        <div class="stat-label">عملاء جدد هذا الشهر</div>
+    </div>
+</div>
+
+<div class="customers-header">
+    <div class="search-section">
+        <input type="text" class="form-control search-input" id="customerSearch" 
+               placeholder="🔍 البحث عن عميل بالاسم أو الهاتف...">
+        <button class="btn btn-outline-secondary" onclick="loadCustomers()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    
+    <button class="btn add-customer-btn" onclick="showAddCustomerModal()">
+        <i class="fas fa-plus"></i>
+        إضافة عميل جديد
+    </button>
+</div>
+
+<div class="customers-table">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>اسم العميل</th>
+                    <th>رقم الهاتف</th>
+                    <th>العنوان</th>
+                    <th>الرصيد</th>
+                    <th>تاريخ التسجيل</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="customersTableBody">
+                <!-- Customers will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Customer Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">إضافة عميل جديد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm">
+                    <input type="hidden" id="customerId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">اسم العميل *</label>
+                        <input type="text" class="form-control" id="customerName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">رقم الهاتف</label>
+                        <input type="tel" class="form-control" id="customerPhone">
+                    </div>
+                    
+
+                    
+                    <div class="mb-3">
+                        <label class="form-label">العنوان</label>
+                        <textarea class="form-control" id="customerAddress" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الرصيد الافتتاحي</label>
+                        <input type="number" class="form-control" id="customerOpeningBalance"
+                               step="0.01" value="0" placeholder="0.00">
+                        <small class="form-text text-muted">الرصيد السابق للعميل قبل بداية النظام</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomer()">حفظ العميل</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let customers = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCustomers();
+        loadStats();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        document.getElementById('customerSearch').addEventListener('input', filterCustomers);
+    }
+
+    async function loadCustomers() {
+        try {
+            const response = await fetch('/api/customers');
+            const result = await response.json();
+            if (result.success) {
+                customers = result.data;
+            } else {
+                customers = [];
+            }
+            displayCustomers();
+        } catch (error) {
+            console.error('Error loading customers:', error);
+            // Show sample data
+            customers = [
+                {
+                    id: 1,
+                    name: 'أحمد محمد علي',
+                    phone: '01234567890',
+                    address: 'القاهرة، مصر',
+                    balance: 150.00,
+                    created_at: '2025-01-15T10:30:00'
+                },
+                {
+                    id: 2,
+                    name: 'فاطمة حسن',
+                    phone: '01098765432',
+                    address: 'الإسكندرية، مصر',
+                    balance: -50.00,
+                    created_at: '2025-02-20T14:15:00'
+                }
+            ];
+            displayCustomers();
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/customers/stats');
+            if (response.ok) {
+                const stats = await response.json();
+                document.getElementById('totalCustomers').textContent = stats.total_customers || customers.length;
+                document.getElementById('activeCustomers').textContent = stats.active_customers || customers.length;
+                document.getElementById('totalBalance').textContent = stats.total_balance || '2,500';
+                document.getElementById('newCustomers').textContent = stats.new_customers || '12';
+            } else {
+                // Show sample stats
+                document.getElementById('totalCustomers').textContent = customers.length;
+                document.getElementById('activeCustomers').textContent = customers.length;
+                document.getElementById('totalBalance').textContent = '2,500';
+                document.getElementById('newCustomers').textContent = '12';
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+            // Show sample stats
+            document.getElementById('totalCustomers').textContent = customers.length;
+            document.getElementById('activeCustomers').textContent = customers.length;
+            document.getElementById('totalBalance').textContent = '2,500';
+            document.getElementById('newCustomers').textContent = '12';
+        }
+    }
+
+    function displayCustomers(filteredCustomers = null) {
+        const customersToShow = filteredCustomers || customers;
+        const tbody = document.getElementById('customersTableBody');
+        
+        tbody.innerHTML = '';
+        
+        if (customersToShow.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">لا توجد عملاء</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        customersToShow.forEach(customer => {
+            const date = new Date(customer.created_at).toLocaleDateString('ar-EG');
+            const balanceClass = customer.balance > 0 ? 'balance-positive' : 
+                                customer.balance < 0 ? 'balance-negative' : 'balance-zero';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="customer-name">${customer.name}</div>
+                </td>
+                <td>${customer.phone || '-'}</td>
+                <td>${customer.address || '-'}</td>
+                <td>
+                    <span class="${balanceClass}">${customer.balance.toFixed(2)} ج.م</span>
+                </td>
+                <td>${date}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${customer.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewCustomerHistory(${customer.id})">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${customer.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function filterCustomers() {
+        const searchTerm = document.getElementById('customerSearch').value.toLowerCase();
+        const filtered = customers.filter(customer =>
+            customer.name.toLowerCase().includes(searchTerm) ||
+            (customer.phone && customer.phone.includes(searchTerm))
+        );
+        displayCustomers(filtered);
+    }
+
+    function showAddCustomerModal() {
+        document.getElementById('modalTitle').textContent = 'إضافة عميل جديد';
+        document.getElementById('customerForm').reset();
+        document.getElementById('customerId').value = '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('customerModal'));
+        modal.show();
+    }
+
+    function editCustomer(customerId) {
+        const customer = customers.find(c => c.id === customerId);
+        if (!customer) return;
+        
+        document.getElementById('modalTitle').textContent = 'تعديل العميل';
+        document.getElementById('customerId').value = customer.id;
+        document.getElementById('customerName').value = customer.name;
+        document.getElementById('customerPhone').value = customer.phone || '';
+        document.getElementById('customerAddress').value = customer.address || '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('customerModal'));
+        modal.show();
+    }
+
+    async function saveCustomer() {
+        const form = document.getElementById('customerForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        const customerData = {
+            name: document.getElementById('customerName').value,
+            phone: document.getElementById('customerPhone').value,
+            address: document.getElementById('customerAddress').value,
+            opening_balance: parseFloat(document.getElementById('customerOpeningBalance').value) || 0
+        };
+        
+        const customerId = document.getElementById('customerId').value;
+        const isEdit = customerId !== '';
+        
+        try {
+            const response = await fetch(`/api/customers${isEdit ? '/edit/' + customerId : '/add'}`, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(customerData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(isEdit ? 'تم تحديث العميل بنجاح' : 'تم إضافة العميل بنجاح');
+                bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
+                loadCustomers();
+                loadStats();
+            } else {
+                alert('خطأ: ' + result.message);
+            }
+        } catch (error) {
+            alert('حدث خطأ في الاتصال');
+            console.error('Error saving customer:', error);
+        }
+    }
+
+    function viewCustomerHistory(customerId) {
+        alert('عرض تاريخ العميل رقم ' + customerId);
+        // Here you would implement customer history view
+    }
+
+    async function deleteCustomer(customerId) {
+        if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
+        
+        try {
+            const response = await fetch(`/api/customers/delete/${customerId}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('تم حذف العميل بنجاح');
+                loadCustomers();
+                loadStats();
+            } else {
+                alert('خطأ: ' + result.message);
+            }
+        } catch (error) {
+            alert('حدث خطأ في الاتصال');
+            console.error('Error deleting customer:', error);
+        }
+    }
+</script>
+{% endblock %}

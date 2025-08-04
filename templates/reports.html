@@ -1,0 +1,2490 @@
+{% extends "base.html" %}
+
+{% block title %}التقارير والتحليلات - نظام POS{% endblock %}
+{% block page_title %}التقارير والتحليلات{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-container {
+        padding: 2rem 0;
+    }
+
+    .report-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f3f4;
+    }
+
+    .report-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ai-badge {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .chart-container {
+        height: 400px;
+        margin: 1rem 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-item {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .ai-insights {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .insight-item {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #fff;
+    }
+
+    .insight-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .insight-text {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .btn-generate {
+        background: linear-gradient(45deg, var(--success-color), #58d68d);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .recommendations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    .recommendation-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        border-left: 4px solid var(--secondary-color);
+    }
+
+    .recommendation-type {
+        font-weight: 600;
+        color: var(--secondary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .recommendation-text {
+        color: #666;
+        line-height: 1.6;
+    }
+
+    .financial-statement {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .statement-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--primary-color);
+    }
+
+    .statement-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .statement-period {
+        color: #666;
+        font-size: 1rem;
+    }
+
+    .financial-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+
+    .financial-table th,
+    .financial-table td {
+        padding: 0.75rem;
+        text-align: right;
+        border-bottom: 1px solid #eee;
+    }
+
+    .financial-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .financial-table .category-header {
+        background: var(--secondary-color);
+        color: white;
+        font-weight: 600;
+    }
+
+    .financial-table .total-row {
+        background: #f0f8ff;
+        font-weight: 600;
+        border-top: 2px solid var(--primary-color);
+    }
+
+    .financial-table .final-total {
+        background: var(--primary-color);
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .amount-positive {
+        color: #28a745;
+    }
+
+    .amount-negative {
+        color: #dc3545;
+    }
+
+    .amount {
+        text-align: left;
+        font-weight: bold;
+    }
+
+    .profit {
+        color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+
+    .section-header {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+
+    .total-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+
+    .grand-total-row {
+        background-color: #dee2e6;
+        font-weight: bold;
+        border-top: 2px solid #6c757d;
+    }
+
+    .profit-row {
+        background-color: rgba(40, 167, 69, 0.1);
+        font-weight: bold;
+        border-top: 2px solid #28a745;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+
+    .summary-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .balance-summary {
+        margin-bottom: 2rem;
+    }
+
+    .balance-summary .summary-card {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark, #0056b3) 100%);
+        color: white;
+        border: none;
+        transition: transform 0.3s ease;
+    }
+
+    .balance-summary .summary-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .balance-summary .bg-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    }
+
+    .balance-summary .bg-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #a71e2a 100%) !important;
+    }
+
+    .balance-summary .bg-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+    }
+
+    .balance-summary .bg-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%) !important;
+        color: #212529 !important;
+    }
+
+    .financial-ratios {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-top: 2rem;
+    }
+
+    .ratio-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .ratio-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .ratio-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .ratio-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .ratio-status {
+        font-size: 0.8rem;
+        font-weight: bold;
+        padding: 0.25rem 0.5rem;
+        border-radius: 15px;
+        display: inline-block;
+    }
+
+    .financial-table th.bg-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    }
+
+    .financial-table th.bg-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #a71e2a 100%) !important;
+    }
+
+    .financial-table td i {
+        margin-right: 0.5rem;
+        width: 16px;
+        text-align: center;
+    }
+
+    .financial-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+        .filter-row {
+            flex-direction: column;
+        }
+        
+        .filter-group {
+            min-width: auto;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <!-- Filters Section -->
+    <div class="filter-section">
+        <h5 class="mb-3">
+            <i class="fas fa-filter text-primary"></i>
+            فلاتر التقارير
+        </h5>
+        <div class="filter-row">
+            <div class="filter-group">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="filter-group">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" class="form-control" id="endDate">
+            </div>
+            <div class="filter-group">
+                <label class="form-label">نوع التقرير</label>
+                <select class="form-control" id="reportType">
+                    <option value="sales">تقرير المبيعات</option>
+                    <option value="purchases">تقرير المشتريات</option>
+                    <option value="products">تقرير المنتجات</option>
+                    <!-- التقارير الأساسية -->
+                    <optgroup label="📊 التقارير الأساسية">
+                        <option value="sales-summary-daily">إجمالي المبيعات اليومية</option>
+                        <option value="sales-summary-monthly">إجمالي المبيعات الشهرية</option>
+                        <option value="sales-summary-yearly">إجمالي المبيعات السنوية</option>
+                        <option value="best-products-sales">أفضل المنتجات مبيعاً</option>
+                        <option value="best-products-profit">أفضل المنتجات ربحية</option>
+                        <option value="best-customers">أفضل العملاء</option>
+                        <option value="customers">تقرير العملاء</option>
+                    </optgroup>
+
+                    <!-- القوائم المالية -->
+                    <optgroup label="💰 القوائم المالية">
+                        <option value="profit_loss">قائمة الأرباح والخسائر</option>
+                        <option value="balance_sheet">الميزانية العمومية</option>
+                        <option value="cash_flow">قائمة التدفقات النقدية</option>
+                        <option value="income_statement">قائمة الدخل</option>
+                        <option value="financial_position">قائمة المركز المالي</option>
+                        <option value="profit-analysis">تحليل الأرباح والمصروفات</option>
+                    </optgroup>
+
+                    <!-- تقارير المخزون -->
+                    <optgroup label="📦 تقارير المخزون">
+                        <option value="inventory-status">كميات المخزون الحالي</option>
+                        <option value="inventory-predictions">توقعات المخزون</option>
+                        <option value="slow-moving">المنتجات الراكدة</option>
+                        <option value="out-of-stock">المنتجات المطلوبة</option>
+                    </optgroup>
+
+                    <!-- تقارير المدفوعات -->
+                    <optgroup label="💳 تقارير المدفوعات">
+                        <option value="payment-delays">تقارير تأخر السداد</option>
+                        <option value="payment-history">سجل المدفوعات</option>
+                        <option value="receivables">الذمم المدينة</option>
+                        <option value="payables">الذمم الدائنة</option>
+                    </optgroup>
+
+                    <!-- التحليلات المتقدمة -->
+                    <optgroup label="🤖 التحليلات المتقدمة">
+                        <option value="time-analysis">تحليل الأوقات والأيام</option>
+                        <option value="business-plan">خطة العمل الذكية</option>
+                        <option value="automated-report">التقرير التلقائي الشامل</option>
+                    </optgroup>
+                    <option value="sales-prediction">توقع المبيعات الشهرية</option>
+                    <option value="customer-behavior">تحليل سلوك العملاء</option>
+                    <option value="smart-alerts">التنبيهات الذكية</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-generate w-100" onclick="generateReport()">
+                    <i class="fas fa-chart-line"></i>
+                    إنشاء التقرير
+                </button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-outline-danger" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i>
+                    تصدير PDF
+                </button>
+            </div>
+            <div class="filter-group">
+                <button class="btn btn-outline-success" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i>
+                    تصدير Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p>جاري إنشاء التقرير وتحليل البيانات...</p>
+    </div>
+
+    <!-- AI Insights Section -->
+    <div class="ai-insights" id="aiInsights" style="display: none;">
+        <h4 class="mb-3">
+            <i class="fas fa-brain"></i>
+            تحليلات الذكاء الاصطناعي
+            <span class="ai-badge">AI Powered</span>
+        </h4>
+        <div id="insightsContent">
+            <!-- AI insights will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="report-card" id="statsOverview" style="display: none;">
+        <div class="report-header">
+            <div class="report-title">
+                <i class="fas fa-chart-bar"></i>
+                نظرة عامة على الإحصائيات
+            </div>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="report-card" id="chartsSection" style="display: none;">
+        <div class="report-header">
+            <div class="report-title">
+                <i class="fas fa-chart-line"></i>
+                الرسوم البيانية
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="report-card" id="recommendationsSection" style="display: none;">
+        <div class="report-header">
+            <div class="report-title">
+                <i class="fas fa-lightbulb"></i>
+                توصيات الذكاء الاصطناعي
+                <span class="ai-badge">AI Powered</span>
+            </div>
+        </div>
+        <div class="recommendations-grid" id="recommendationsGrid">
+            <!-- Recommendations will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Financial Statements Section -->
+    <div class="report-card" id="financialStatementsSection" style="display: none;">
+        <div class="report-header">
+            <div class="report-title">
+                <i class="fas fa-chart-pie"></i>
+                القوائم المالية
+            </div>
+            <div>
+                <button class="btn btn-outline-primary btn-sm" onclick="exportFinancialStatement()">
+                    <i class="fas fa-download"></i> تصدير
+                </button>
+                <button class="btn btn-outline-success btn-sm" onclick="printFinancialStatement()">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+            </div>
+        </div>
+        <div id="financialContent">
+            <!-- Financial statements will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Section -->
+    <div class="report-card" id="advancedAnalyticsSection" style="display: none;">
+        <div class="report-header">
+            <div class="report-title">
+                <i class="fas fa-brain"></i>
+                التحليلات المتقدمة
+                <span class="ai-badge">AI Powered</span>
+            </div>
+        </div>
+        <div id="analyticsContent">
+            <!-- Advanced analytics will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let currentChart = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default dates
+        const today = new Date();
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+        
+        document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    });
+
+    async function generateReport() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const reportType = document.getElementById('reportType').value;
+
+        if (!startDate || !endDate) {
+            alert('يرجى تحديد تاريخ البداية والنهاية');
+            return;
+        }
+
+        // Show loading
+        document.getElementById('loadingSpinner').style.display = 'block';
+        hideAllSections();
+
+        try {
+            // Generate report data
+            const reportData = await fetchReportData(reportType, startDate, endDate);
+            
+            // Generate AI insights
+            const aiInsights = await generateAIInsights(reportData, reportType);
+            
+            // Display results
+            displayStats(reportData.stats);
+            if (reportType.includes('financial') || reportType === 'profit_loss' ||
+                reportType === 'balance_sheet' || reportType === 'cash_flow' ||
+                reportType === 'income_statement' || reportType === 'financial_position' ||
+                reportType === 'receivables' || reportType === 'payables') {
+                displayFinancialStatement(reportData, reportType);
+                showFinancialSections();
+            } else if (reportType === 'payment-history') {
+                await generatePaymentHistoryReport();
+            } else if (reportType === 'out-of-stock') {
+                await generateOutOfStockReport();
+            } else {
+                displayChart(reportData.chartData, reportType);
+                displayAIInsights(aiInsights);
+                displayRecommendations(aiInsights.recommendations);
+                showAllSections();
+            }
+            
+        } catch (error) {
+            console.error('Error generating report:', error);
+            alert('حدث خطأ في إنشاء التقرير');
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+    }
+
+    async function fetchReportData(reportType, startDate, endDate) {
+        // Simulate API call - replace with actual API
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const mockData = {
+                    sales: {
+                        stats: [
+                            { label: 'إجمالي المبيعات', value: '125,450', icon: 'fas fa-dollar-sign' },
+                            { label: 'عدد الفواتير', value: '342', icon: 'fas fa-receipt' },
+                            { label: 'متوسط الفاتورة', value: '367', icon: 'fas fa-chart-line' },
+                            { label: 'أفضل منتج', value: 'منتج A', icon: 'fas fa-star' }
+                        ],
+                        chartData: {
+                            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                            datasets: [{
+                                label: 'المبيعات',
+                                data: [12000, 19000, 15000, 25000, 22000, 30000],
+                                borderColor: 'rgb(75, 192, 192)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                tension: 0.4
+                            }]
+                        }
+                    },
+                    purchases: {
+                        stats: [
+                            { label: 'إجمالي المشتريات', value: '85,200', icon: 'fas fa-shopping-cart' },
+                            { label: 'عدد الفواتير', value: '156', icon: 'fas fa-file-invoice' },
+                            { label: 'متوسط الفاتورة', value: '546', icon: 'fas fa-chart-bar' },
+                            { label: 'أفضل مورد', value: 'شركة النور', icon: 'fas fa-truck' }
+                        ],
+                        chartData: {
+                            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                            datasets: [{
+                                label: 'المشتريات',
+                                data: [8000, 12000, 10000, 15000, 14000, 18000],
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.4
+                            }]
+                        }
+                    },
+                    income_statement: {
+                        total_sales: 122950,
+                        other_income: 2500,
+                        cost_of_goods: 75000,
+                        operating_expenses: 15000,
+                        admin_expenses: 7200,
+                        stats: [
+                            { label: 'إجمالي الإيرادات', value: '125,450', icon: 'fas fa-arrow-up' },
+                            { label: 'إجمالي التكاليف', value: '97,200', icon: 'fas fa-arrow-down' },
+                            { label: 'صافي الربح', value: '28,250', icon: 'fas fa-chart-line' },
+                            { label: 'هامش الربح', value: '22.5%', icon: 'fas fa-percentage' }
+                        ]
+                    },
+                    financial_position: {
+                        cash: 45000,
+                        accounts_receivable: 35000,
+                        inventory_value: 85000,
+                        equipment: 35000,
+                        furniture: 20000,
+                        accounts_payable: 25000,
+                        accrued_expenses: 18000,
+                        capital: 150000,
+                        retained_earnings: 27000,
+                        stats: [
+                            { label: 'إجمالي الأصول', value: '220,000', icon: 'fas fa-building' },
+                            { label: 'إجمالي الخصوم', value: '43,000', icon: 'fas fa-credit-card' },
+                            { label: 'حقوق الملكية', value: '177,000', icon: 'fas fa-user-tie' },
+                            { label: 'نسبة السيولة', value: '3.8', icon: 'fas fa-tint' }
+                        ]
+                    },
+                    receivables: {
+                        receivables: [
+                            { name: 'أحمد محمد علي', phone: '01234567890', balance: -1500, last_transaction: '2025-07-15' },
+                            { name: 'فاطمة حسن', phone: '01098765432', balance: -750, last_transaction: '2025-07-20' },
+                            { name: 'محمد أحمد', phone: '01555666777', balance: -2200, last_transaction: '2025-06-25' },
+                            { name: 'علي حسين', phone: '01777888999', balance: -950, last_transaction: '2025-07-28' }
+                        ],
+                        stats: [
+                            { label: 'إجمالي الذمم المدينة', value: '5,400', icon: 'fas fa-user-clock' },
+                            { label: 'عدد العملاء المدينين', value: '4', icon: 'fas fa-users' },
+                            { label: 'متوسط المديونية', value: '1,350', icon: 'fas fa-calculator' },
+                            { label: 'حسابات متأخرة', value: '1', icon: 'fas fa-exclamation-triangle' }
+                        ]
+                    },
+                    balance_sheet: {
+                        cash: 45000,
+                        accounts_receivable: 35000,
+                        inventory_value: 85000,
+                        prepaid_expenses: 8000,
+                        equipment: 50000,
+                        furniture: 15000,
+                        accumulated_depreciation: 12000,
+                        accounts_payable: 25000,
+                        accrued_expenses: 18000,
+                        short_term_loans: 15000,
+                        long_term_loans: 30000,
+                        capital: 150000,
+                        retained_earnings: 27000,
+                        current_year_profit: 28250,
+                        stats: [
+                            { label: 'إجمالي الأصول', value: '221,000', icon: 'fas fa-building' },
+                            { label: 'إجمالي الخصوم', value: '88,000', icon: 'fas fa-credit-card' },
+                            { label: 'حقوق الملكية', value: '205,250', icon: 'fas fa-user-tie' },
+                            { label: 'نسبة السيولة', value: '2.9', icon: 'fas fa-tint' }
+                        ]
+                    },
+                    payables: {
+                        payables: [
+                            { name: 'شركة النور للتجارة', phone: '01111222333', balance: 5000, last_transaction: '2025-07-10' },
+                            { name: 'مؤسسة الأمل التجارية', phone: '01444555666', balance: 3200, last_transaction: '2025-07-18' },
+                            { name: 'شركة المستقبل', phone: '01888999000', balance: 12500, last_transaction: '2025-07-05' },
+                            { name: 'مؤسسة التقدم', phone: '01333444555', balance: 2800, last_transaction: '2025-07-25' }
+                        ],
+                        stats: [
+                            { label: 'إجمالي الذمم الدائنة', value: '23,500', icon: 'fas fa-truck' },
+                            { label: 'عدد الموردين الدائنين', value: '4', icon: 'fas fa-industry' },
+                            { label: 'متوسط المستحقات', value: '5,875', icon: 'fas fa-calculator' },
+                            { label: 'أولوية عالية', value: '1', icon: 'fas fa-exclamation-circle' }
+                        ]
+                    }
+                };
+                resolve(mockData[reportType] || mockData.sales);
+            }, 2000);
+        });
+    }
+
+    async function generateAIInsights(reportData, reportType) {
+        // Simulate AI analysis
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const insights = {
+                    sales: {
+                        insights: [
+                            {
+                                title: 'نمو المبيعات',
+                                text: 'تشهد المبيعات نمواً مستمراً بنسبة 15% شهرياً، مما يشير إلى صحة الأعمال.'
+                            },
+                            {
+                                title: 'أفضل الأوقات للبيع',
+                                text: 'تحليل البيانات يظهر أن أفضل أوقات البيع هي بين الساعة 2-5 مساءً.'
+                            },
+                            {
+                                title: 'المنتجات الأكثر ربحية',
+                                text: 'المنتجات في الفئة A تحقق أعلى هامش ربح بنسبة 35%.'
+                            }
+                        ],
+                        recommendations: [
+                            {
+                                type: 'تحسين المخزون',
+                                text: 'يُنصح بزيادة مخزون المنتجات الأكثر مبيعاً لتجنب نفاد المخزون.'
+                            },
+                            {
+                                type: 'استراتيجية التسعير',
+                                text: 'يمكن زيادة أسعار المنتجات عالية الطلب بنسبة 5-10% دون تأثير على المبيعات.'
+                            },
+                            {
+                                type: 'توقيت العروض',
+                                text: 'إطلاق العروض الترويجية في نهاية الأسبوع يحقق أفضل النتائج.'
+                            }
+                        ]
+                    }
+                };
+                resolve(insights[reportType] || insights.sales);
+            }, 1500);
+        });
+    }
+
+    function displayStats(stats) {
+        const statsGrid = document.getElementById('statsGrid');
+        statsGrid.innerHTML = '';
+        
+        stats.forEach(stat => {
+            const statItem = document.createElement('div');
+            statItem.className = 'stat-item';
+            statItem.innerHTML = `
+                <i class="${stat.icon} fa-2x mb-2"></i>
+                <div class="stat-value">${stat.value}</div>
+                <div class="stat-label">${stat.label}</div>
+            `;
+            statsGrid.appendChild(statItem);
+        });
+    }
+
+    function displayChart(chartData, reportType) {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        
+        if (currentChart) {
+            currentChart.destroy();
+        }
+        
+        currentChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: reportType === 'sales' ? 'تطور المبيعات' : 'تطور المشتريات'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function displayAIInsights(aiData) {
+        const insightsContent = document.getElementById('insightsContent');
+        insightsContent.innerHTML = '';
+        
+        aiData.insights.forEach(insight => {
+            const insightItem = document.createElement('div');
+            insightItem.className = 'insight-item';
+            insightItem.innerHTML = `
+                <div class="insight-title">${insight.title}</div>
+                <div class="insight-text">${insight.text}</div>
+            `;
+            insightsContent.appendChild(insightItem);
+        });
+    }
+
+    function displayRecommendations(recommendations) {
+        const recommendationsGrid = document.getElementById('recommendationsGrid');
+        recommendationsGrid.innerHTML = '';
+        
+        recommendations.forEach(rec => {
+            const recCard = document.createElement('div');
+            recCard.className = 'recommendation-card';
+            recCard.innerHTML = `
+                <div class="recommendation-type">${rec.type}</div>
+                <div class="recommendation-text">${rec.text}</div>
+            `;
+            recommendationsGrid.appendChild(recCard);
+        });
+    }
+
+    function hideAllSections() {
+        document.getElementById('aiInsights').style.display = 'none';
+        document.getElementById('statsOverview').style.display = 'none';
+        document.getElementById('chartsSection').style.display = 'none';
+        document.getElementById('recommendationsSection').style.display = 'none';
+    }
+
+    function showAllSections() {
+        document.getElementById('aiInsights').style.display = 'block';
+        document.getElementById('statsOverview').style.display = 'block';
+        document.getElementById('chartsSection').style.display = 'block';
+        document.getElementById('recommendationsSection').style.display = 'block';
+        document.getElementById('financialStatementsSection').style.display = 'none';
+    }
+
+    function showFinancialSections() {
+        document.getElementById('aiInsights').style.display = 'none';
+        document.getElementById('statsOverview').style.display = 'none';
+        document.getElementById('chartsSection').style.display = 'none';
+        document.getElementById('recommendationsSection').style.display = 'none';
+        document.getElementById('financialStatementsSection').style.display = 'block';
+    }
+
+    function displayFinancialStatement(data, type) {
+        const financialContent = document.getElementById('financialContent');
+
+        switch (type) {
+            case 'profit_loss':
+                financialContent.innerHTML = generateProfitLossStatement(data);
+                break;
+            case 'balance_sheet':
+                financialContent.innerHTML = generateBalanceSheet(data);
+                break;
+            case 'cash_flow':
+                financialContent.innerHTML = generateCashFlowStatement(data);
+                break;
+            case 'income_statement':
+                financialContent.innerHTML = generateIncomeStatement(data);
+                break;
+            case 'financial_position':
+                financialContent.innerHTML = generateFinancialPosition(data);
+                break;
+            case 'receivables':
+                financialContent.innerHTML = generateReceivablesStatement(data);
+                break;
+            case 'payables':
+                financialContent.innerHTML = generatePayablesStatement(data);
+                break;
+            default:
+                financialContent.innerHTML = generateFinancialOverview(data);
+        }
+    }
+
+    function generateProfitLossStatement(data) {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        return `
+        <div class="financial-statement">
+            <div class="statement-header">
+                <div class="statement-title">قائمة الأرباح والخسائر</div>
+                <div class="statement-period">من ${startDate} إلى ${endDate}</div>
+            </div>
+
+            <table class="financial-table">
+                <thead>
+                    <tr>
+                        <th>البيان</th>
+                        <th>المبلغ (ج.م)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="category-header">
+                        <td colspan="2">الإيرادات</td>
+                    </tr>
+                    <tr>
+                        <td>إيرادات المبيعات</td>
+                        <td class="amount-positive">125,450.00</td>
+                    </tr>
+                    <tr>
+                        <td>خصومات المبيعات</td>
+                        <td class="amount-negative">(2,500.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>صافي الإيرادات</strong></td>
+                        <td><strong>122,950.00</strong></td>
+                    </tr>
+
+                    <tr class="category-header">
+                        <td colspan="2">تكلفة البضاعة المباعة</td>
+                    </tr>
+                    <tr>
+                        <td>تكلفة المشتريات</td>
+                        <td class="amount-negative">(85,200.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>إجمالي الربح</strong></td>
+                        <td><strong class="amount-positive">37,750.00</strong></td>
+                    </tr>
+
+                    <tr class="category-header">
+                        <td colspan="2">المصروفات التشغيلية</td>
+                    </tr>
+                    <tr>
+                        <td>مصروفات إدارية</td>
+                        <td class="amount-negative">(5,000.00)</td>
+                    </tr>
+                    <tr>
+                        <td>مصروفات تسويق</td>
+                        <td class="amount-negative">(3,000.00)</td>
+                    </tr>
+                    <tr>
+                        <td>مصروفات أخرى</td>
+                        <td class="amount-negative">(1,500.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>إجمالي المصروفات</strong></td>
+                        <td><strong>(9,500.00)</strong></td>
+                    </tr>
+
+                    <tr class="final-total">
+                        <td><strong>صافي الربح</strong></td>
+                        <td><strong>28,250.00</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="financial-summary">
+                <div class="summary-card">
+                    <div class="summary-value">23.0%</div>
+                    <div class="summary-label">هامش الربح الإجمالي</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">7.7%</div>
+                    <div class="summary-label">نسبة المصروفات</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">23.0%</div>
+                    <div class="summary-label">هامش الربح الصافي</div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    function generateBalanceSheet(data) {
+        const endDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
+
+        // حساب القيم الديناميكية
+        const cash = data.cash || 45000;
+        const inventory = data.inventory_value || 85000;
+        const receivables = data.accounts_receivable || 35000;
+        const prepaidExpenses = data.prepaid_expenses || 8000;
+        const equipment = data.equipment || 50000;
+        const furniture = data.furniture || 15000;
+        const accumulatedDepreciation = data.accumulated_depreciation || 12000;
+
+        const payables = data.accounts_payable || 25000;
+        const accruedExpenses = data.accrued_expenses || 18000;
+        const shortTermLoans = data.short_term_loans || 15000;
+        const longTermLoans = data.long_term_loans || 30000;
+        const capital = data.capital || 150000;
+        const retainedEarnings = data.retained_earnings || 27000;
+        const currentYearProfit = data.current_year_profit || 28250;
+
+        // حساب الإجماليات
+        const totalCurrentAssets = cash + inventory + receivables + prepaidExpenses;
+        const netFixedAssets = equipment + furniture - accumulatedDepreciation;
+        const totalAssets = totalCurrentAssets + netFixedAssets;
+
+        const totalCurrentLiabilities = payables + accruedExpenses + shortTermLoans;
+        const totalLiabilities = totalCurrentLiabilities + longTermLoans;
+        const totalEquity = capital + retainedEarnings + currentYearProfit;
+        const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+
+        return `
+        <div class="financial-statement">
+            <div class="statement-header">
+                <div class="statement-title">الميزانية العمومية</div>
+                <div class="statement-period">كما في ${endDate}</div>
+            </div>
+
+            <!-- ملخص سريع -->
+            <div class="balance-summary mb-4">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="summary-card bg-primary text-white">
+                            <div class="summary-value">${totalAssets.toLocaleString()}</div>
+                            <div class="summary-label">إجمالي الأصول</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card bg-danger text-white">
+                            <div class="summary-value">${totalLiabilities.toLocaleString()}</div>
+                            <div class="summary-label">إجمالي الخصوم</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card bg-success text-white">
+                            <div class="summary-value">${totalEquity.toLocaleString()}</div>
+                            <div class="summary-label">حقوق الملكية</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-card ${totalAssets === totalLiabilitiesAndEquity ? 'bg-success' : 'bg-warning'} text-white">
+                            <div class="summary-value">${totalAssets === totalLiabilitiesAndEquity ? '✓' : '✗'}</div>
+                            <div class="summary-label">توازن الميزانية</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- الأصول -->
+                <div class="col-md-6">
+                    <table class="financial-table">
+                        <thead>
+                            <tr>
+                                <th colspan="2" class="bg-primary text-white">
+                                    <i class="fas fa-building"></i> الأصول
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="category-header">
+                                <td colspan="2"><i class="fas fa-coins"></i> الأصول المتداولة</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-money-bill-wave"></i> النقدية والبنوك</td>
+                                <td class="amount-positive">${cash.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-users"></i> الذمم المدينة (العملاء)</td>
+                                <td class="amount-positive">${receivables.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-boxes"></i> المخزون</td>
+                                <td class="amount-positive">${inventory.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-calendar-check"></i> مصروفات مدفوعة مقدماً</td>
+                                <td class="amount-positive">${prepaidExpenses.toLocaleString()}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>إجمالي الأصول المتداولة</strong></td>
+                                <td class="amount-positive"><strong>${totalCurrentAssets.toLocaleString()}</strong></td>
+                            </tr>
+
+                            <tr class="category-header">
+                                <td colspan="2"><i class="fas fa-industry"></i> الأصول الثابتة</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-cogs"></i> المعدات والآلات</td>
+                                <td class="amount-positive">${equipment.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-chair"></i> الأثاث والتجهيزات</td>
+                                <td class="amount-positive">${furniture.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-minus-circle"></i> مجمع الإهلاك</td>
+                                <td class="amount-negative">(${accumulatedDepreciation.toLocaleString()})</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>صافي الأصول الثابتة</strong></td>
+                                <td class="amount-positive"><strong>${netFixedAssets.toLocaleString()}</strong></td>
+                            </tr>
+
+                            <tr class="final-total">
+                                <td><strong><i class="fas fa-calculator"></i> إجمالي الأصول</strong></td>
+                                <td class="amount-positive"><strong>${totalAssets.toLocaleString()}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- الخصوم وحقوق الملكية -->
+                <div class="col-md-6">
+                    <table class="financial-table">
+                        <thead>
+                            <tr>
+                                <th colspan="2" class="bg-danger text-white">
+                                    <i class="fas fa-credit-card"></i> الخصوم وحقوق الملكية
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="category-header">
+                                <td colspan="2"><i class="fas fa-clock"></i> الخصوم المتداولة</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-truck"></i> الذمم الدائنة (الموردين)</td>
+                                <td class="amount-negative">${payables.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-file-invoice"></i> مصروفات مستحقة</td>
+                                <td class="amount-negative">${accruedExpenses.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-hand-holding-usd"></i> قروض قصيرة الأجل</td>
+                                <td class="amount-negative">${shortTermLoans.toLocaleString()}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>إجمالي الخصوم المتداولة</strong></td>
+                                <td class="amount-negative"><strong>${totalCurrentLiabilities.toLocaleString()}</strong></td>
+                            </tr>
+
+                            <tr class="category-header">
+                                <td colspan="2"><i class="fas fa-calendar-alt"></i> الخصوم طويلة الأجل</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-university"></i> قروض طويلة الأجل</td>
+                                <td class="amount-negative">${longTermLoans.toLocaleString()}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>إجمالي الخصوم</strong></td>
+                                <td class="amount-negative"><strong>${totalLiabilities.toLocaleString()}</strong></td>
+                            </tr>
+
+                            <tr class="category-header">
+                                <td colspan="2"><i class="fas fa-user-tie"></i> حقوق الملكية</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-piggy-bank"></i> رأس المال</td>
+                                <td class="amount-positive">${capital.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-chart-line"></i> الأرباح المحتجزة</td>
+                                <td class="amount-positive">${retainedEarnings.toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-trophy"></i> ربح العام الحالي</td>
+                                <td class="amount-positive">${currentYearProfit.toLocaleString()}</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td><strong>إجمالي حقوق الملكية</strong></td>
+                                <td class="amount-positive"><strong>${totalEquity.toLocaleString()}</strong></td>
+                            </tr>
+
+                            <tr class="final-total">
+                                <td><strong><i class="fas fa-balance-scale"></i> إجمالي الخصوم وحقوق الملكية</strong></td>
+                                <td class="amount-positive"><strong>${totalLiabilitiesAndEquity.toLocaleString()}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- النسب المالية -->
+            <div class="financial-ratios mt-4">
+                <h5><i class="fas fa-chart-pie"></i> النسب المالية الرئيسية</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="ratio-card">
+                            <div class="ratio-value">${(totalCurrentAssets / totalCurrentLiabilities).toFixed(2)}</div>
+                            <div class="ratio-label">نسبة السيولة الجارية</div>
+                            <div class="ratio-status ${(totalCurrentAssets / totalCurrentLiabilities) > 2 ? 'text-success' : 'text-warning'}">
+                                ${(totalCurrentAssets / totalCurrentLiabilities) > 2 ? 'ممتاز' : 'مقبول'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="ratio-card">
+                            <div class="ratio-value">${((totalCurrentAssets - inventory) / totalCurrentLiabilities).toFixed(2)}</div>
+                            <div class="ratio-label">نسبة السيولة السريعة</div>
+                            <div class="ratio-status ${((totalCurrentAssets - inventory) / totalCurrentLiabilities) > 1 ? 'text-success' : 'text-warning'}">
+                                ${((totalCurrentAssets - inventory) / totalCurrentLiabilities) > 1 ? 'جيد' : 'يحتاج تحسين'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="ratio-card">
+                            <div class="ratio-value">${(totalLiabilities / totalAssets * 100).toFixed(1)}%</div>
+                            <div class="ratio-label">نسبة المديونية</div>
+                            <div class="ratio-status ${(totalLiabilities / totalAssets) < 0.5 ? 'text-success' : 'text-warning'}">
+                                ${(totalLiabilities / totalAssets) < 0.5 ? 'منخفضة' : 'متوسطة'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="ratio-card">
+                            <div class="ratio-value">${(totalEquity / totalAssets * 100).toFixed(1)}%</div>
+                            <div class="ratio-label">نسبة حقوق الملكية</div>
+                            <div class="ratio-status ${(totalEquity / totalAssets) > 0.5 ? 'text-success' : 'text-warning'}">
+                                ${(totalEquity / totalAssets) > 0.5 ? 'قوية' : 'متوسطة'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    function generateCashFlowStatement(data) {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        return `
+        <div class="financial-statement">
+            <div class="statement-header">
+                <div class="statement-title">قائمة التدفقات النقدية</div>
+                <div class="statement-period">من ${startDate} إلى ${endDate}</div>
+            </div>
+
+            <table class="financial-table">
+                <thead>
+                    <tr>
+                        <th>البيان</th>
+                        <th>المبلغ (ج.م)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="category-header">
+                        <td colspan="2">التدفقات النقدية من الأنشطة التشغيلية</td>
+                    </tr>
+                    <tr>
+                        <td>المقبوضات من العملاء</td>
+                        <td class="amount-positive">120,000.00</td>
+                    </tr>
+                    <tr>
+                        <td>المدفوعات للموردين</td>
+                        <td class="amount-negative">(80,000.00)</td>
+                    </tr>
+                    <tr>
+                        <td>المدفوعات للمصروفات</td>
+                        <td class="amount-negative">(15,000.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>صافي التدفق من الأنشطة التشغيلية</strong></td>
+                        <td><strong class="amount-positive">25,000.00</strong></td>
+                    </tr>
+
+                    <tr class="category-header">
+                        <td colspan="2">التدفقات النقدية من الأنشطة الاستثمارية</td>
+                    </tr>
+                    <tr>
+                        <td>شراء معدات</td>
+                        <td class="amount-negative">(10,000.00)</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>صافي التدفق من الأنشطة الاستثمارية</strong></td>
+                        <td><strong class="amount-negative">(10,000.00)</strong></td>
+                    </tr>
+
+                    <tr class="category-header">
+                        <td colspan="2">التدفقات النقدية من الأنشطة التمويلية</td>
+                    </tr>
+                    <tr>
+                        <td>قروض جديدة</td>
+                        <td class="amount-positive">5,000.00</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td><strong>صافي التدفق من الأنشطة التمويلية</strong></td>
+                        <td><strong class="amount-positive">5,000.00</strong></td>
+                    </tr>
+
+                    <tr class="final-total">
+                        <td><strong>صافي التغير في النقدية</strong></td>
+                        <td><strong class="amount-positive">20,000.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td>النقدية في بداية الفترة</td>
+                        <td>25,000.00</td>
+                    </tr>
+                    <tr class="final-total">
+                        <td><strong>النقدية في نهاية الفترة</strong></td>
+                        <td><strong>45,000.00</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        `;
+    }
+
+    function generateFinancialOverview(data) {
+        return `
+        <div class="financial-statement">
+            <div class="statement-header">
+                <div class="statement-title">نظرة عامة على الوضع المالي</div>
+            </div>
+
+            <div class="financial-summary">
+                <div class="summary-card">
+                    <div class="summary-value">122,950</div>
+                    <div class="summary-label">إجمالي الإيرادات</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">28,250</div>
+                    <div class="summary-label">صافي الربح</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">220,000</div>
+                    <div class="summary-label">إجمالي الأصول</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">177,000</div>
+                    <div class="summary-label">حقوق الملكية</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h4>المؤشرات المالية الرئيسية</h4>
+                <table class="financial-table">
+                    <thead>
+                        <tr>
+                            <th>المؤشر</th>
+                            <th>القيمة</th>
+                            <th>التقييم</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>نسبة السيولة السريعة</td>
+                            <td>3.6</td>
+                            <td class="amount-positive">ممتاز</td>
+                        </tr>
+                        <tr>
+                            <td>معدل دوران المخزون</td>
+                            <td>4.2</td>
+                            <td class="amount-positive">جيد</td>
+                        </tr>
+                        <tr>
+                            <td>هامش الربح الصافي</td>
+                            <td>23%</td>
+                            <td class="amount-positive">ممتاز</td>
+                        </tr>
+                        <tr>
+                            <td>العائد على الأصول</td>
+                            <td>12.8%</td>
+                            <td class="amount-positive">جيد جداً</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        `;
+    }
+
+    // قائمة الدخل
+    function generateIncomeStatement(data) {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        return `
+            <div class="financial-statement">
+                <div class="statement-header">
+                    <div class="statement-title">قائمة الدخل</div>
+                    <div class="statement-period">للفترة من ${startDate} إلى ${endDate}</div>
+                </div>
+
+                <table class="financial-table">
+                    <thead>
+                        <tr>
+                            <th>البيان</th>
+                            <th>المبلغ (ج.م)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="category-header">
+                            <td colspan="2">الإيرادات</td>
+                        </tr>
+                        <tr>
+                            <td>إيرادات المبيعات</td>
+                            <td class="amount-positive">${(data.total_sales || 122950).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <td>إيرادات أخرى</td>
+                            <td class="amount-positive">${(data.other_income || 2500).toLocaleString()}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>إجمالي الإيرادات</strong></td>
+                            <td class="amount-positive"><strong>${((data.total_sales || 122950) + (data.other_income || 2500)).toLocaleString()}</strong></td>
+                        </tr>
+
+                        <tr class="category-header">
+                            <td colspan="2">التكاليف والمصروفات</td>
+                        </tr>
+                        <tr>
+                            <td>تكلفة البضاعة المباعة</td>
+                            <td class="amount-negative">${(data.cost_of_goods || 75000).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <td>مصروفات التشغيل</td>
+                            <td class="amount-negative">${(data.operating_expenses || 15000).toLocaleString()}</td>
+                        </tr>
+                        <tr>
+                            <td>مصروفات إدارية</td>
+                            <td class="amount-negative">${(data.admin_expenses || 7200).toLocaleString()}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>إجمالي التكاليف</strong></td>
+                            <td class="amount-negative"><strong>${((data.cost_of_goods || 75000) + (data.operating_expenses || 15000) + (data.admin_expenses || 7200)).toLocaleString()}</strong></td>
+                        </tr>
+
+                        <tr class="final-total">
+                            <td><strong>صافي الربح</strong></td>
+                            <td class="amount-positive"><strong>${(((data.total_sales || 122950) + (data.other_income || 2500)) - ((data.cost_of_goods || 75000) + (data.operating_expenses || 15000) + (data.admin_expenses || 7200))).toLocaleString()}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // قائمة المركز المالي
+    function generateFinancialPosition(data) {
+        const reportDate = document.getElementById('endDate').value || new Date().toISOString().split('T')[0];
+
+        return `
+            <div class="financial-statement">
+                <div class="statement-header">
+                    <div class="statement-title">قائمة المركز المالي</div>
+                    <div class="statement-period">كما في ${reportDate}</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>الأصول</h4>
+                        <table class="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>البيان</th>
+                                    <th>المبلغ (ج.م)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="category-header">
+                                    <td colspan="2">الأصول المتداولة</td>
+                                </tr>
+                                <tr>
+                                    <td>النقدية والبنوك</td>
+                                    <td class="amount-positive">${(data.cash || 45000).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>الذمم المدينة</td>
+                                    <td class="amount-positive">${(data.accounts_receivable || 35000).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>المخزون</td>
+                                    <td class="amount-positive">${(data.inventory_value || 85000).toLocaleString()}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>إجمالي الأصول المتداولة</strong></td>
+                                    <td class="amount-positive"><strong>${((data.cash || 45000) + (data.accounts_receivable || 35000) + (data.inventory_value || 85000)).toLocaleString()}</strong></td>
+                                </tr>
+
+                                <tr class="category-header">
+                                    <td colspan="2">الأصول الثابتة</td>
+                                </tr>
+                                <tr>
+                                    <td>المعدات والأجهزة</td>
+                                    <td class="amount-positive">${(data.equipment || 35000).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>الأثاث والتجهيزات</td>
+                                    <td class="amount-positive">${(data.furniture || 20000).toLocaleString()}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>إجمالي الأصول الثابتة</strong></td>
+                                    <td class="amount-positive"><strong>${((data.equipment || 35000) + (data.furniture || 20000)).toLocaleString()}</strong></td>
+                                </tr>
+
+                                <tr class="final-total">
+                                    <td><strong>إجمالي الأصول</strong></td>
+                                    <td class="amount-positive"><strong>${((data.cash || 45000) + (data.accounts_receivable || 35000) + (data.inventory_value || 85000) + (data.equipment || 35000) + (data.furniture || 20000)).toLocaleString()}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h4>الخصوم وحقوق الملكية</h4>
+                        <table class="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>البيان</th>
+                                    <th>المبلغ (ج.م)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="category-header">
+                                    <td colspan="2">الخصوم المتداولة</td>
+                                </tr>
+                                <tr>
+                                    <td>الذمم الدائنة</td>
+                                    <td class="amount-negative">${(data.accounts_payable || 25000).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>مصروفات مستحقة</td>
+                                    <td class="amount-negative">${(data.accrued_expenses || 18000).toLocaleString()}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>إجمالي الخصوم المتداولة</strong></td>
+                                    <td class="amount-negative"><strong>${((data.accounts_payable || 25000) + (data.accrued_expenses || 18000)).toLocaleString()}</strong></td>
+                                </tr>
+
+                                <tr class="category-header">
+                                    <td colspan="2">حقوق الملكية</td>
+                                </tr>
+                                <tr>
+                                    <td>رأس المال</td>
+                                    <td class="amount-positive">${(data.capital || 150000).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td>الأرباح المحتجزة</td>
+                                    <td class="amount-positive">${(data.retained_earnings || 27000).toLocaleString()}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>إجمالي حقوق الملكية</strong></td>
+                                    <td class="amount-positive"><strong>${((data.capital || 150000) + (data.retained_earnings || 27000)).toLocaleString()}</strong></td>
+                                </tr>
+
+                                <tr class="final-total">
+                                    <td><strong>إجمالي الخصوم وحقوق الملكية</strong></td>
+                                    <td class="amount-positive"><strong>${((data.accounts_payable || 25000) + (data.accrued_expenses || 18000) + (data.capital || 150000) + (data.retained_earnings || 27000)).toLocaleString()}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // قائمة الذمم المدينة
+    function generateReceivablesStatement(data) {
+        return `
+            <div class="financial-statement">
+                <div class="statement-header">
+                    <div class="statement-title">قائمة الذمم المدينة</div>
+                    <div class="statement-period">العملاء المدينين</div>
+                </div>
+
+                <table class="financial-table">
+                    <thead>
+                        <tr>
+                            <th>اسم العميل</th>
+                            <th>رقم الهاتف</th>
+                            <th>المبلغ المستحق</th>
+                            <th>تاريخ آخر معاملة</th>
+                            <th>عدد الأيام</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>أحمد محمد علي</td>
+                            <td>01234567890</td>
+                            <td class="amount-positive">1,500</td>
+                            <td>2025-07-15</td>
+                            <td>18 يوم</td>
+                            <td><span class="text-success">عادي</span></td>
+                        </tr>
+                        <tr>
+                            <td>فاطمة حسن</td>
+                            <td>01098765432</td>
+                            <td class="amount-positive">750</td>
+                            <td>2025-07-20</td>
+                            <td>13 يوم</td>
+                            <td><span class="text-warning">تحذير</span></td>
+                        </tr>
+                        <tr>
+                            <td>محمد أحمد</td>
+                            <td>01555666777</td>
+                            <td class="amount-positive">2,200</td>
+                            <td>2025-06-25</td>
+                            <td>38 يوم</td>
+                            <td><span class="text-danger">متأخر</span></td>
+                        </tr>
+                        <tr>
+                            <td>علي حسين</td>
+                            <td>01777888999</td>
+                            <td class="amount-positive">950</td>
+                            <td>2025-07-28</td>
+                            <td>5 أيام</td>
+                            <td><span class="text-success">عادي</span></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="final-total">
+                            <td colspan="2"><strong>إجمالي الذمم المدينة</strong></td>
+                            <td class="amount-positive"><strong>5,400</strong></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-success">2</div>
+                                <div class="summary-label">حسابات عادية</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-warning">1</div>
+                                <div class="summary-label">حسابات تحذير</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-danger">1</div>
+                                <div class="summary-label">حسابات متأخرة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // قائمة الذمم الدائنة
+    function generatePayablesStatement(data) {
+        return `
+            <div class="financial-statement">
+                <div class="statement-header">
+                    <div class="statement-title">قائمة الذمم الدائنة</div>
+                    <div class="statement-period">المستحقات للموردين</div>
+                </div>
+
+                <table class="financial-table">
+                    <thead>
+                        <tr>
+                            <th>اسم المورد</th>
+                            <th>رقم الهاتف</th>
+                            <th>المبلغ المستحق</th>
+                            <th>تاريخ آخر معاملة</th>
+                            <th>عدد الأيام</th>
+                            <th>الأولوية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>شركة النور للتجارة</td>
+                            <td>01111222333</td>
+                            <td class="amount-negative">5,000</td>
+                            <td>2025-07-10</td>
+                            <td>23 يوم</td>
+                            <td><span class="text-warning">متوسطة</span></td>
+                        </tr>
+                        <tr>
+                            <td>مؤسسة الأمل التجارية</td>
+                            <td>01444555666</td>
+                            <td class="amount-negative">3,200</td>
+                            <td>2025-07-18</td>
+                            <td>15 يوم</td>
+                            <td><span class="text-info">منخفضة</span></td>
+                        </tr>
+                        <tr>
+                            <td>شركة المستقبل</td>
+                            <td>01888999000</td>
+                            <td class="amount-negative">12,500</td>
+                            <td>2025-07-05</td>
+                            <td>28 يوم</td>
+                            <td><span class="text-danger">عالية</span></td>
+                        </tr>
+                        <tr>
+                            <td>مؤسسة التقدم</td>
+                            <td>01333444555</td>
+                            <td class="amount-negative">2,800</td>
+                            <td>2025-07-25</td>
+                            <td>8 أيام</td>
+                            <td><span class="text-info">منخفضة</span></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="final-total">
+                            <td colspan="2"><strong>إجمالي الذمم الدائنة</strong></td>
+                            <td class="amount-negative"><strong>23,500</strong></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-danger">1</div>
+                                <div class="summary-label">أولوية عالية</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-warning">1</div>
+                                <div class="summary-label">أولوية متوسطة</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="summary-card">
+                                <div class="summary-value text-info">2</div>
+                                <div class="summary-label">أولوية منخفضة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // تقرير سجل المدفوعات
+    async function generatePaymentHistoryReport() {
+        try {
+            const response = await fetch('/api/payments/history');
+            const data = await response.json();
+
+            let html = `
+                <div class="analytics-report">
+                    <h4>سجل المدفوعات</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>العميل/المورد</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>الملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // بيانات تجريبية
+            const samplePayments = [
+                { date: '2025-08-01', type: 'تحصيل', customer: 'أحمد محمد', amount: 500, method: 'نقدي', notes: 'دفعة جزئية' },
+                { date: '2025-07-30', type: 'دفع', supplier: 'شركة النور', amount: 2000, method: 'تحويل بنكي', notes: 'دفع فاتورة' },
+                { date: '2025-07-28', type: 'تحصيل', customer: 'فاطمة حسن', amount: 750, method: 'نقدي', notes: 'تسوية كاملة' }
+            ];
+
+            samplePayments.forEach(payment => {
+                const typeClass = payment.type === 'تحصيل' ? 'text-success' : 'text-primary';
+                html += `
+                    <tr>
+                        <td>${payment.date}</td>
+                        <td><span class="${typeClass}">${payment.type}</span></td>
+                        <td>${payment.customer || payment.supplier}</td>
+                        <td>${payment.amount.toLocaleString()} ج.م</td>
+                        <td>${payment.method}</td>
+                        <td>${payment.notes}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('reportContent').innerHTML = html;
+            showAllSections();
+
+        } catch (error) {
+            console.error('Error generating payment history report:', error);
+        }
+    }
+
+    // تقرير المنتجات المطلوبة
+    async function generateOutOfStockReport() {
+        try {
+            const response = await fetch('/api/products');
+            const result = await response.json();
+            const products = result.success ? result.data : [];
+
+            const outOfStock = products.filter(product => product.quantity <= 5);
+
+            let html = `
+                <div class="analytics-report">
+                    <h4>المنتجات المطلوبة (المخزون المنخفض)</h4>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        يوجد ${outOfStock.length} منتج يحتاج إلى إعادة تموين
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>اسم المنتج</th>
+                                <th>الكمية الحالية</th>
+                                <th>سعر البيع</th>
+                                <th>الحالة</th>
+                                <th>الإجراء المطلوب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            if (outOfStock.length > 0) {
+                outOfStock.forEach(product => {
+                    const status = product.quantity === 0 ? 'نفد المخزون' : 'مخزون منخفض';
+                    const statusClass = product.quantity === 0 ? 'text-danger' : 'text-warning';
+                    const action = product.quantity === 0 ? 'طلب فوري' : 'إعادة تموين';
+
+                    html += `
+                        <tr>
+                            <td>${product.name}</td>
+                            <td><span class="${statusClass}">${product.quantity}</span></td>
+                            <td>${product.price.toLocaleString()} ج.م</td>
+                            <td><span class="${statusClass}">${status}</span></td>
+                            <td><span class="badge bg-warning">${action}</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html += '<tr><td colspan="5" class="text-center text-success">جميع المنتجات متوفرة بكميات كافية</td></tr>';
+            }
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('reportContent').innerHTML = html;
+            showAllSections();
+
+        } catch (error) {
+            console.error('Error generating out of stock report:', error);
+        }
+    }
+
+    function exportFinancialStatement() {
+        alert('سيتم إضافة ميزة التصدير قريباً');
+    }
+
+    function printFinancialStatement() {
+        const content = document.getElementById('financialContent').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>القوائم المالية</title>
+                <style>
+                    body { font-family: Arial, sans-serif; direction: rtl; }
+                    .financial-table { width: 100%; border-collapse: collapse; }
+                    .financial-table th, .financial-table td {
+                        border: 1px solid #ddd; padding: 8px; text-align: right;
+                    }
+                    .financial-table th { background: #f5f5f5; }
+                    .category-header { background: #007bff; color: white; }
+                    .total-row { background: #f0f8ff; font-weight: bold; }
+                    .final-total { background: #007bff; color: white; font-weight: bold; }
+                    .amount-positive { color: green; }
+                    .amount-negative { color: red; }
+                </style>
+            </head>
+            <body>${content}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    // Advanced Analytics Functions
+    async function fetchAdvancedAnalytics(reportType) {
+        let apiUrl = '';
+
+        // تحديد API المناسب حسب نوع التقرير
+        if (['best-products', 'time-analysis', 'inventory-predictions', 'slow-moving', 'automated-report'].includes(reportType)) {
+            apiUrl = `/api/analytics/${reportType}`;
+        } else if (reportType.startsWith('sales-summary-')) {
+            const period = reportType.split('-')[2]; // daily, monthly, yearly
+            apiUrl = `/api/advanced/sales-summary?period=${period}`;
+        } else if (reportType === 'best-products-sales') {
+            apiUrl = `/api/advanced/best-products?by=sales`;
+        } else if (reportType === 'best-products-profit') {
+            apiUrl = `/api/advanced/best-products?by=profit`;
+        } else if (reportType === 'best-customers') {
+            apiUrl = `/api/advanced/best-customers`;
+        } else if (reportType === 'payment-delays') {
+            apiUrl = `/api/advanced/payment-delays`;
+        } else if (reportType === 'inventory-status') {
+            apiUrl = `/api/advanced/inventory-status`;
+        } else if (reportType === 'profit-analysis') {
+            apiUrl = `/api/advanced/profit-analysis`;
+        } else if (reportType === 'business-plan') {
+            apiUrl = `/api/advanced/business-plan`;
+        } else if (reportType === 'sales-prediction') {
+            apiUrl = `/api/advanced/sales-prediction`;
+        } else if (reportType === 'customer-behavior') {
+            apiUrl = `/api/advanced/customer-behavior`;
+        } else if (reportType === 'smart-alerts') {
+            apiUrl = `/api/advanced/smart-alerts`;
+        } else {
+            apiUrl = `/api/analytics/${reportType}`;
+        }
+
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+        return result.data;
+    }
+
+    function displayAdvancedAnalytics(data, reportType) {
+        const analyticsContent = document.getElementById('analyticsContent');
+
+        switch (reportType) {
+            case 'best-products':
+                analyticsContent.innerHTML = generateBestProductsReport(data);
+                break;
+            case 'time-analysis':
+                analyticsContent.innerHTML = generateTimeAnalysisReport(data);
+                break;
+            case 'inventory-predictions':
+                analyticsContent.innerHTML = generateInventoryPredictionsReport(data);
+                break;
+            case 'slow-moving':
+                analyticsContent.innerHTML = generateSlowMovingReport(data);
+                break;
+            case 'automated-report':
+                analyticsContent.innerHTML = generateAutomatedReport(data);
+                break;
+            case 'sales-summary-daily':
+            case 'sales-summary-monthly':
+            case 'sales-summary-yearly':
+                analyticsContent.innerHTML = generateSalesSummaryReport(data, reportType);
+                break;
+            case 'best-products-sales':
+            case 'best-products-profit':
+                analyticsContent.innerHTML = generateAdvancedBestProductsReport(data, reportType);
+                break;
+            case 'best-customers':
+                analyticsContent.innerHTML = generateBestCustomersReport(data);
+                break;
+            case 'payment-delays':
+                analyticsContent.innerHTML = generatePaymentDelaysReport(data);
+                break;
+            case 'inventory-status':
+                analyticsContent.innerHTML = generateInventoryStatusReport(data);
+                break;
+            case 'profit-analysis':
+                analyticsContent.innerHTML = generateProfitAnalysisReport(data);
+                break;
+            case 'business-plan':
+                analyticsContent.innerHTML = generateBusinessPlanReport(data);
+                break;
+            case 'sales-prediction':
+                analyticsContent.innerHTML = generateSalesPredictionReport(data);
+                break;
+            case 'customer-behavior':
+                analyticsContent.innerHTML = generateCustomerBehaviorReport(data);
+                break;
+            case 'smart-alerts':
+                analyticsContent.innerHTML = generateSmartAlertsReport(data);
+                break;
+        }
+    }
+
+    function generateBestProductsReport(data) {
+        let html = '<div class="analytics-report">';
+        html += '<h4>أفضل المنتجات مبيعاً</h4>';
+
+        if (data.top_by_quantity && data.top_by_quantity.length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>المنتج</th><th>الكمية المباعة</th><th>إجمالي الإيرادات</th></tr></thead><tbody>';
+
+            data.top_by_quantity.forEach(item => {
+                html += `<tr>
+                    <td>${item.product_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.total.toFixed(2)} ج.م</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateTimeAnalysisReport(data) {
+        let html = '<div class="analytics-report">';
+        html += '<h4>تحليل الأوقات والأيام</h4>';
+
+        if (data.best_days) {
+            html += '<h5>أفضل الأيام</h5>';
+            html += '<div class="row">';
+            data.best_days.forEach(day => {
+                html += `<div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>${day.day_name}</h6>
+                            <p>الإيرادات: ${day.total.toFixed(2)} ج.م</p>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        if (data.peak_hours) {
+            html += '<h5>أوقات الذروة</h5>';
+            html += '<div class="row">';
+            data.peak_hours.forEach(hour => {
+                html += `<div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>الساعة ${hour.hour}:00</h6>
+                            <p>الإيرادات: ${hour.total.toFixed(2)} ج.م</p>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateInventoryPredictionsReport(data) {
+        let html = '<div class="analytics-report">';
+        html += '<h4>توقعات المخزون</h4>';
+
+        if (Object.keys(data).length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>المنتج</th><th>المخزون الحالي</th><th>المبيعات المتوقعة</th><th>التوصية</th></tr></thead><tbody>';
+
+            Object.values(data).forEach(item => {
+                html += `<tr>
+                    <td>${item.product_name}</td>
+                    <td>${item.current_stock}</td>
+                    <td>${item.predicted_total_sales}</td>
+                    <td>${item.recommended_order > 0 ? 'اطلب ' + item.recommended_order + ' قطعة' : 'المخزون كافي'}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateSlowMovingReport(data) {
+        let html = '<div class="analytics-report">';
+        html += '<h4>المنتجات الراكدة</h4>';
+
+        if (data.length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>المنتج</th><th>المخزون</th><th>آخر بيع</th><th>التوصية</th></tr></thead><tbody>';
+
+            data.forEach(item => {
+                html += `<tr>
+                    <td>${item.product_name}</td>
+                    <td>${item.current_stock}</td>
+                    <td>${item.days_since_last_sale} يوم</td>
+                    <td>${item.recommendation}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateAutomatedReport(data) {
+        let html = '<div class="analytics-report">';
+        html += '<h4>التقرير التلقائي الشامل</h4>';
+
+        // ملخص الأداء
+        if (data.summary) {
+            html += '<div class="summary-section">';
+            html += '<h5>ملخص الأداء</h5>';
+            html += `<p>إجمالي الإيرادات: ${data.summary.total_revenue?.toFixed(2) || 0} ج.م</p>`;
+            html += `<p>عدد المعاملات: ${data.summary.total_transactions || 0}</p>`;
+            html += `<p>متوسط قيمة المعاملة: ${data.summary.avg_transaction_value?.toFixed(2) || 0} ج.م</p>`;
+            html += '</div>';
+        }
+
+        // التوصيات
+        if (data.recommendations && data.recommendations.length > 0) {
+            html += '<div class="recommendations-section">';
+            html += '<h5>التوصيات</h5>';
+            data.recommendations.forEach(rec => {
+                html += `<div class="alert alert-info">
+                    <strong>${rec.title}</strong><br>
+                    ${rec.description}<br>
+                    <em>الإجراء المطلوب: ${rec.action}</em>
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function showAdvancedAnalyticsSections() {
+        document.getElementById('aiInsights').style.display = 'none';
+        document.getElementById('statsOverview').style.display = 'none';
+        document.getElementById('chartsSection').style.display = 'none';
+        document.getElementById('recommendationsSection').style.display = 'none';
+        document.getElementById('financialStatementsSection').style.display = 'none';
+        document.getElementById('advancedAnalyticsSection').style.display = 'block';
+    }
+
+    // Export Functions
+    function exportToPDF() {
+        const reportType = document.getElementById('reportType').value;
+        if (!reportType) {
+            alert('يرجى اختيار نوع التقرير أولاً');
+            return;
+        }
+
+        window.open(`/api/export/pdf?type=${reportType}`, '_blank');
+    }
+
+    function exportToExcel() {
+        const reportType = document.getElementById('reportType').value;
+        if (!reportType) {
+            alert('يرجى اختيار نوع التقرير أولاً');
+            return;
+        }
+
+        window.open(`/api/export/excel?type=${reportType}`, '_blank');
+    }
+
+    // دوال التقارير الجديدة
+    function generateSalesSummaryReport(data, reportType) {
+        const periodName = reportType.includes('daily') ? 'اليومية' :
+                          reportType.includes('monthly') ? 'الشهرية' : 'السنوية';
+
+        let html = `<div class="analytics-report">
+            <h4>إجمالي المبيعات ${periodName}</h4>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5>${data.total_sales?.toFixed(2) || 0} ج.م</h5>
+                            <p>إجمالي المبيعات</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5>${data.average_per_period?.toFixed(2) || 0} ج.م</h5>
+                            <p>متوسط الفترة</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5>${data.trend || 'مستقر'}</h5>
+                            <p>الاتجاه</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        return html;
+    }
+
+    function generateAdvancedBestProductsReport(data, reportType) {
+        const isProfit = reportType.includes('profit');
+        const title = isProfit ? 'أفضل المنتجات ربحية' : 'أفضل المنتجات مبيعاً';
+
+        let html = `<div class="analytics-report">
+            <h4>${title}</h4>`;
+
+        if (data.top_products && Object.keys(data.top_products).length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>المنتج</th>';
+
+            if (isProfit) {
+                html += '<th>إجمالي الربح</th><th>هامش الربح</th><th>الكمية المباعة</th>';
+            } else {
+                html += '<th>الكمية المباعة</th><th>إجمالي الإيرادات</th>';
+            }
+
+            html += '</tr></thead><tbody>';
+
+            Object.entries(data.top_products).forEach(([key, item]) => {
+                const productName = key.split(',')[1] || 'غير محدد';
+                html += `<tr><td>${productName}</td>`;
+
+                if (isProfit) {
+                    html += `<td>${item.profit?.toFixed(2) || 0} ج.م</td>
+                            <td>${item.profit_margin?.toFixed(1) || 0}%</td>
+                            <td>${item.quantity_sold || 0}</td>`;
+                } else {
+                    html += `<td>${item.quantity_sold || 0}</td>
+                            <td>${item.revenue?.toFixed(2) || 0} ج.م</td>`;
+                }
+
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateBestCustomersReport(data) {
+        let html = '<div class="analytics-report"><h4>أفضل العملاء</h4>';
+
+        if (data.top_customers && Object.keys(data.top_customers).length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>العميل</th><th>إجمالي المشتريات</th><th>عدد المعاملات</th><th>متوسط المعاملة</th></tr></thead><tbody>';
+
+            Object.entries(data.top_customers).forEach(([key, customer]) => {
+                const customerName = key.split(',')[1] || 'غير محدد';
+                html += `<tr>
+                    <td>${customerName}</td>
+                    <td>${customer.amount?.toFixed(2) || 0} ج.م</td>
+                    <td>${customer.transaction_count || 0}</td>
+                    <td>${customer.avg_transaction?.toFixed(2) || 0} ج.م</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generatePaymentDelaysReport(data) {
+        let html = '<div class="analytics-report"><h4>تقارير تأخر السداد</h4>';
+
+        html += `<div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center bg-danger text-white">
+                    <div class="card-body">
+                        <h5>${data.customers_with_debt || 0}</h5>
+                        <p>عملاء متأخرين</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center bg-warning text-white">
+                    <div class="card-body">
+                        <h5>${data.total_debt?.toFixed(2) || 0} ج.م</h5>
+                        <p>إجمالي المديونية</p>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        if (data.delay_details && data.delay_details.length > 0) {
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>العميل</th><th>المبلغ المستحق</th><th>أيام التأخير</th><th>مستوى المخاطر</th></tr></thead><tbody>';
+
+            data.delay_details.forEach(customer => {
+                const riskClass = customer.risk_level === 'عالي' ? 'text-danger' :
+                                 customer.risk_level === 'متوسط' ? 'text-warning' : 'text-success';
+
+                html += `<tr>
+                    <td>${customer.customer_name}</td>
+                    <td>${customer.debt_amount?.toFixed(2) || 0} ج.م</td>
+                    <td>${customer.days_overdue || 0} يوم</td>
+                    <td class="${riskClass}">${customer.risk_level}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateInventoryStatusReport(data) {
+        let html = '<div class="analytics-report"><h4>حالة المخزون الحالي</h4>';
+
+        html += `<div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5>${data.total_products || 0}</h5>
+                        <p>إجمالي المنتجات</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <h5>${data.total_inventory_value?.toFixed(2) || 0} ج.م</h5>
+                        <p>قيمة المخزون</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-warning text-white">
+                    <div class="card-body">
+                        <h5>${data.low_stock_products?.length || 0}</h5>
+                        <p>منتجات تنفد قريباً</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center bg-danger text-white">
+                    <div class="card-body">
+                        <h5>${data.out_of_stock_products?.length || 0}</h5>
+                        <p>منتجات غير متوفرة</p>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        // المنتجات التي تنفد قريباً
+        if (data.low_stock_products && data.low_stock_products.length > 0) {
+            html += '<h5>المنتجات التي تنفد قريباً</h5>';
+            html += '<div class="table-responsive"><table class="table table-striped">';
+            html += '<thead><tr><th>المنتج</th><th>الكمية الحالية</th><th>حد التنبيه</th><th>قيمة المخزون</th></tr></thead><tbody>';
+
+            data.low_stock_products.forEach(product => {
+                html += `<tr>
+                    <td>${product.product_name}</td>
+                    <td>${product.current_quantity}</td>
+                    <td>${product.alert_quantity}</td>
+                    <td>${product.stock_value?.toFixed(2) || 0} ج.م</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    function generateSmartAlertsReport(data) {
+        let html = '<div class="analytics-report"><h4>التنبيهات الذكية</h4>';
+
+        if (data && data.length > 0) {
+            data.forEach(alert => {
+                const alertClass = alert.priority === 'عالية' ? 'alert-danger' :
+                                  alert.priority === 'متوسطة' ? 'alert-warning' : 'alert-info';
+
+                html += `<div class="alert ${alertClass}">
+                    <h6><i class="fas fa-exclamation-triangle"></i> ${alert.title}</h6>
+                    <p>${alert.message}</p>
+                    <small><strong>الإجراء المطلوب:</strong> ${alert.action}</small>
+                </div>`;
+            });
+        } else {
+            html += '<div class="alert alert-success">لا توجد تنبيهات في الوقت الحالي</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+</script>
+{% endblock %}

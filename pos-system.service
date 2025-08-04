@@ -1,0 +1,46 @@
+[Unit]
+Description=POS System - نظام نقطة البيع
+Documentation=https://github.com/your-username/pos-system
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/pos-system
+Environment=PATH=/path/to/pos-system/venv/bin
+Environment=FLASK_ENV=production
+Environment=PORT=5001
+Environment=HOST=127.0.0.1
+Environment=SECRET_KEY=your-production-secret-key-change-this
+Environment=DATABASE_PATH=/path/to/pos-system/data/pos_system.db
+
+# تشغيل التطبيق
+ExecStart=/path/to/pos-system/venv/bin/gunicorn --config gunicorn_config.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# إعدادات إعادة التشغيل
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# إعدادات الأمان
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/path/to/pos-system/data /path/to/pos-system/logs
+
+# إعدادات الموارد
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# إعدادات السجلات
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pos-system
+
+[Install]
+WantedBy=multi-user.target

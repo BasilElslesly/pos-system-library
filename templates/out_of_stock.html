@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}المنتجات غير المتوفرة{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stats-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .demand-high { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; }
+    .demand-medium { background: linear-gradient(135deg, #feca57, #ff9ff3); color: white; }
+    .demand-low { background: linear-gradient(135deg, #48dbfb, #0abde3); color: white; }
+
+    .product-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #007bff;
+    }
+
+    .demand-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    .demand-high-text { background: #ff6b6b; color: white; }
+    .demand-medium-text { background: #feca57; color: white; }
+    .demand-low-text { background: #48dbfb; color: white; }
+
+    .action-buttons {
+        margin-top: 1rem;
+    }
+
+    .btn-restock {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        margin-left: 0.5rem;
+    }
+
+    .btn-remove {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        margin-left: 0.5rem;
+    }
+
+    .search-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .ai-insights {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .insight-item {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="page-header text-center">
+        <h1><i class="fas fa-exclamation-triangle"></i> المنتجات غير المتوفرة</h1>
+        <p>إدارة المنتجات المطلوبة وغير المتوفرة في المخزون</p>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-icon demand-high mx-auto">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <h3 id="highDemandCount">0</h3>
+                <p>طلب عالي</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-icon demand-medium mx-auto">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 id="mediumDemandCount">0</h3>
+                <p>طلب متوسط</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-icon demand-low mx-auto">
+                    <i class="fas fa-minus-circle"></i>
+                </div>
+                <h3 id="lowDemandCount">0</h3>
+                <p>طلب منخفض</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #2ed573, #1e90ff); color: white;">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <h3 id="potentialRevenue">0</h3>
+                <p>إيرادات محتملة</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="ai-insights">
+        <h4><i class="fas fa-brain"></i> رؤى الذكاء الاصطناعي</h4>
+        <div id="aiInsights">
+            <!-- AI insights will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-section">
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">البحث في المنتجات</label>
+                <input type="text" class="form-control" id="productSearch" placeholder="ابحث عن منتج...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">فلترة حسب الطلب</label>
+                <select class="form-control" id="demandFilter">
+                    <option value="">جميع المستويات</option>
+                    <option value="high">طلب عالي</option>
+                    <option value="medium">طلب متوسط</option>
+                    <option value="low">طلب منخفض</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">إجراء</label>
+                <button class="btn btn-primary w-100" onclick="showAddProductModal()">
+                    <i class="fas fa-plus"></i> إضافة منتج مطلوب
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products List -->
+    <div id="productsList">
+        <!-- Products will be loaded here -->
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة منتج مطلوب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProductForm">
+                    <div class="mb-3">
+                        <label class="form-label">اسم المنتج</label>
+                        <input type="text" class="form-control" id="productName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">مستوى الطلب</label>
+                        <select class="form-control" id="demandLevel" required>
+                            <option value="">اختر مستوى الطلب</option>
+                            <option value="high">طلب عالي</option>
+                            <option value="medium">طلب متوسط</option>
+                            <option value="low">طلب منخفض</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">السعر المتوقع</label>
+                        <input type="number" class="form-control" id="expectedPrice" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الكمية المطلوبة</label>
+                        <input type="number" class="form-control" id="requestedQuantity" min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveRequestedProduct()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let requestedProducts = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadRequestedProducts();
+        generateAIInsights();
+    });
+
+    function loadRequestedProducts() {
+        // محاكاة بيانات المنتجات المطلوبة
+        requestedProducts = [
+            {
+                id: 1,
+                name: 'لابتوب Dell XPS 13',
+                demandLevel: 'high',
+                expectedPrice: 25000,
+                requestedQuantity: 5,
+                requestCount: 12,
+                lastRequested: '2025-01-30',
+                notes: 'طلب متكرر من عدة عملاء'
+            },
+            {
+                id: 2,
+                name: 'سماعات AirPods Pro',
+                demandLevel: 'medium',
+                expectedPrice: 1200,
+                requestedQuantity: 10,
+                requestCount: 7,
+                lastRequested: '2025-01-28',
+                notes: 'منتج شائع في السوق'
+            },
+            {
+                id: 3,
+                name: 'كاميرا Canon EOS R5',
+                demandLevel: 'low',
+                expectedPrice: 45000,
+                requestedQuantity: 2,
+                requestCount: 3,
+                lastRequested: '2025-01-25',
+                notes: 'طلب من عملاء محددين'
+            }
+        ];
+
+        displayProducts();
+        updateStatistics();
+    }
+
+    function displayProducts() {
+        const productsList = document.getElementById('productsList');
+        const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+        const demandFilter = document.getElementById('demandFilter').value;
+
+        let filteredProducts = requestedProducts.filter(product => {
+            const matchesSearch = product.name.toLowerCase().includes(searchTerm);
+            const matchesDemand = !demandFilter || product.demandLevel === demandFilter;
+            return matchesSearch && matchesDemand;
+        });
+
+        productsList.innerHTML = filteredProducts.map(product => `
+            <div class="product-card">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5>${product.name}</h5>
+                        <span class="demand-indicator demand-${product.demandLevel}-text">
+                            ${getDemandText(product.demandLevel)}
+                        </span>
+                        <p class="text-muted mt-2">${product.notes}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <div><strong>السعر المتوقع:</strong> ${product.expectedPrice} ج.م</div>
+                        <div><strong>الكمية المطلوبة:</strong> ${product.requestedQuantity}</div>
+                        <div><strong>عدد الطلبات:</strong> ${product.requestCount}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="action-buttons">
+                            <button class="btn btn-restock" onclick="restockProduct(${product.id})">
+                                <i class="fas fa-plus"></i> إعادة تموين
+                            </button>
+                            <button class="btn btn-remove" onclick="removeProduct(${product.id})">
+                                <i class="fas fa-trash"></i> إزالة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateStatistics() {
+        const highDemand = requestedProducts.filter(p => p.demandLevel === 'high').length;
+        const mediumDemand = requestedProducts.filter(p => p.demandLevel === 'medium').length;
+        const lowDemand = requestedProducts.filter(p => p.demandLevel === 'low').length;
+        
+        const potentialRevenue = requestedProducts.reduce((sum, product) => 
+            sum + (product.expectedPrice * product.requestedQuantity), 0
+        );
+
+        document.getElementById('highDemandCount').textContent = highDemand;
+        document.getElementById('mediumDemandCount').textContent = mediumDemand;
+        document.getElementById('lowDemandCount').textContent = lowDemand;
+        document.getElementById('potentialRevenue').textContent = potentialRevenue.toLocaleString() + ' ج.م';
+    }
+
+    function generateAIInsights() {
+        const insights = [
+            {
+                icon: 'fas fa-chart-line',
+                title: 'فرصة نمو',
+                description: 'المنتجات عالية الطلب تمثل 40% من الإيرادات المحتملة'
+            },
+            {
+                icon: 'fas fa-clock',
+                title: 'توقيت مثالي',
+                description: 'الآن هو الوقت المناسب لتوفير اللابتوبات قبل موسم العودة للمدارس'
+            },
+            {
+                icon: 'fas fa-users',
+                title: 'رضا العملاء',
+                description: 'توفير هذه المنتجات سيزيد من رضا العملاء بنسبة 25%'
+            }
+        ];
+
+        document.getElementById('aiInsights').innerHTML = insights.map(insight => `
+            <div class="insight-item">
+                <i class="${insight.icon}"></i>
+                <strong>${insight.title}:</strong> ${insight.description}
+            </div>
+        `).join('');
+    }
+
+    function getDemandText(level) {
+        switch(level) {
+            case 'high': return 'طلب عالي';
+            case 'medium': return 'طلب متوسط';
+            case 'low': return 'طلب منخفض';
+            default: return 'غير محدد';
+        }
+    }
+
+    function showAddProductModal() {
+        const modal = new bootstrap.Modal(document.getElementById('addProductModal'));
+        modal.show();
+    }
+
+    function saveRequestedProduct() {
+        const form = document.getElementById('addProductForm');
+        const formData = new FormData(form);
+        
+        const newProduct = {
+            id: requestedProducts.length + 1,
+            name: document.getElementById('productName').value,
+            demandLevel: document.getElementById('demandLevel').value,
+            expectedPrice: parseFloat(document.getElementById('expectedPrice').value) || 0,
+            requestedQuantity: parseInt(document.getElementById('requestedQuantity').value) || 1,
+            requestCount: 1,
+            lastRequested: new Date().toISOString().split('T')[0],
+            notes: document.getElementById('notes').value
+        };
+
+        requestedProducts.push(newProduct);
+        displayProducts();
+        updateStatistics();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+        modal.hide();
+        form.reset();
+        
+        alert('تم إضافة المنتج بنجاح');
+    }
+
+    function restockProduct(productId) {
+        const product = requestedProducts.find(p => p.id === productId);
+        if (product) {
+            if (confirm(`هل تريد إعادة تموين ${product.name}؟`)) {
+                // هنا يمكن إضافة المنتج للمخزون الفعلي
+                alert('تم إعادة التموين بنجاح');
+                removeProduct(productId);
+            }
+        }
+    }
+
+    function removeProduct(productId) {
+        if (confirm('هل تريد إزالة هذا المنتج من قائمة المطلوبات؟')) {
+            requestedProducts = requestedProducts.filter(p => p.id !== productId);
+            displayProducts();
+            updateStatistics();
+        }
+    }
+
+    // Event listeners
+    document.getElementById('productSearch').addEventListener('input', displayProducts);
+    document.getElementById('demandFilter').addEventListener('change', displayProducts);
+</script>
+{% endblock %}
